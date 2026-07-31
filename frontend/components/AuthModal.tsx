@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Sparkles, ArrowRight, ShieldCheck, Video, Briefcase, TrendingUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { X, ShieldCheck, ArrowRight, Video, Briefcase, TrendingUp, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/Button";
 import Logo from "./Logo";
+import { signupUser, loginUser } from "@/lib/api";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12,14 +14,20 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: AuthModalProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [selectedRole, setSelectedRole] = useState<"agency" | "creator" | "sales">("creator");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     setMode(initialMode);
+    setErrorMessage(null);
   }, [initialMode]);
 
   useEffect(() => {
@@ -38,17 +46,34 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-    }, 1500);
+    setErrorMessage(null);
+    setIsLoading(true);
+
+    try {
+      if (mode === "signup") {
+        await signupUser(email, password, fullName || email.split("@")[0], selectedRole);
+      } else {
+        await loginUser(email, password);
+      }
+
+      setSubmitted(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        setSubmitted(false);
+        onClose();
+        router.push("/dashboard");
+      }, 1200);
+
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err.message || "Authentication failed. Is the FastAPI backend running?");
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity">
       <div 
         className="relative w-full max-w-md bg-[#141419] border border-[#262633] rounded-[24px] shadow-2xl overflow-hidden text-white p-6 sm:p-8"
         onClick={(e) => e.stopPropagation()}
@@ -78,14 +103,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
           <p className="text-xs text-gray-400">
             {mode === "signup"
               ? "Join sales teams, marketing agencies & content creators running autonomous agents."
-              : "Sign in to manage your Phone, Browser, and CLI agents."}
+              : "Sign in to manage your Phone, Video, Browser, and CLI agents."}
           </p>
         </div>
 
         {/* Mode Toggle */}
-        <div className="flex items-center p-1 rounded-xl bg-[#09090D] border border-[#22222E] mb-6">
+        <div className="flex items-center p-1 rounded-xl bg-[#09090D] border border-[#22222E] mb-5">
           <button
-            onClick={() => setMode("signup")}
+            type="button"
+            onClick={() => {
+              setMode("signup");
+              setErrorMessage(null);
+            }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === "signup"
                 ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
@@ -95,7 +124,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
             Create Account
           </button>
           <button
-            onClick={() => setMode("signin")}
+            type="button"
+            onClick={() => {
+              setMode("signin");
+              setErrorMessage(null);
+            }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
               mode === "signin"
                 ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
@@ -106,70 +139,92 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
           </button>
         </div>
 
+        {/* Error Alert Box */}
+        {errorMessage && (
+          <div className="p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Form Body */}
         {submitted ? (
           <div className="py-8 text-center space-y-3">
             <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-              <ShieldCheck className="w-6 h-6" />
+              <ShieldCheck className="w-6 h-6 animate-bounce" />
             </div>
             <h4 className="text-lg font-bold text-white">
-              {mode === "signup" ? "Account Created!" : "Authenticated!"}
+              {mode === "signup" ? "Account Created in Neon DB!" : "Authenticated!"}
             </h4>
-            <p className="text-xs text-gray-400">Launching your Millo Agent Workspace...</p>
+            <p className="text-xs text-gray-400 font-mono">Redirecting to Millo Agent Workspace...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             
             {/* Role Selection (For Signup) */}
             {mode === "signup" && (
-              <div className="space-y-2">
-                <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider font-semibold block">
-                  Select Primary Focus:
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole("creator")}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      selectedRole === "creator"
-                        ? "bg-purple-600/20 border-purple-500 text-white"
-                        : "bg-[#09090D] border-[#22222E] text-gray-400 hover:border-gray-700"
-                    }`}
-                  >
-                    <Video className="w-4 h-4 text-purple-400 mb-1" />
-                    <div className="text-[11px] font-bold">Creator</div>
-                    <div className="text-[9px] text-gray-500">Sponsors & DMs</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole("agency")}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      selectedRole === "agency"
-                        ? "bg-purple-600/20 border-purple-500 text-white"
-                        : "bg-[#09090D] border-[#22222E] text-gray-400 hover:border-gray-700"
-                    }`}
-                  >
-                    <Briefcase className="w-4 h-4 text-blue-400 mb-1" />
-                    <div className="text-[11px] font-bold">Agency</div>
-                    <div className="text-[9px] text-gray-500">Client Retainers</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole("sales")}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      selectedRole === "sales"
-                        ? "bg-purple-600/20 border-purple-500 text-white"
-                        : "bg-[#09090D] border-[#22222E] text-gray-400 hover:border-gray-700"
-                    }`}
-                  >
-                    <TrendingUp className="w-4 h-4 text-emerald-400 mb-1" />
-                    <div className="text-[11px] font-bold">Sales & RevOps</div>
-                    <div className="text-[9px] text-gray-500">Outbound Leads</div>
-                  </button>
+              <>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-300 font-medium">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Sarah Jenkins"
+                    className="w-full px-4 py-2 rounded-xl bg-[#09090D] border border-[#22222E] text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans"
+                  />
                 </div>
-              </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider font-semibold block">
+                    Select Primary Focus:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("creator")}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        selectedRole === "creator"
+                          ? "bg-purple-600/20 border-purple-500 text-white"
+                          : "bg-[#09090D] border-[#22222E] text-gray-400 hover:border-gray-700"
+                      }`}
+                    >
+                      <Video className="w-4 h-4 text-purple-400 mb-1" />
+                      <div className="text-[11px] font-bold">Creator</div>
+                      <div className="text-[9px] text-gray-500">Sponsors</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("agency")}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        selectedRole === "agency"
+                          ? "bg-purple-600/20 border-purple-500 text-white"
+                          : "bg-[#09090D] border-[#22222E] text-gray-400 hover:border-gray-700"
+                      }`}
+                    >
+                      <Briefcase className="w-4 h-4 text-blue-400 mb-1" />
+                      <div className="text-[11px] font-bold">Agency</div>
+                      <div className="text-[9px] text-gray-500">Retainers</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("sales")}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        selectedRole === "sales"
+                          ? "bg-purple-600/20 border-purple-500 text-white"
+                          : "bg-[#09090D] border-[#22222E] text-gray-400 hover:border-gray-700"
+                      }`}
+                    >
+                      <TrendingUp className="w-4 h-4 text-emerald-400 mb-1" />
+                      <div className="text-[11px] font-bold">Sales</div>
+                      <div className="text-[9px] text-gray-500">Outbound</div>
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Email Input */}
@@ -199,14 +254,23 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
             </div>
 
             {/* Submit Button */}
-            <Button variant="primary" size="lg" type="submit" className="w-full justify-center mt-2" icon={<ArrowRight className="w-4 h-4" />}>
-              {mode === "signup" ? "Start 14-Day Free Sandbox" : "Sign In to Workspace"}
+            <Button 
+              variant="primary" 
+              size="lg" 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full justify-center mt-2" 
+              icon={isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+            >
+              {isLoading 
+                ? "Connecting to FastAPI..." 
+                : mode === "signup" ? "Create Real-Time Account" : "Sign In to Workspace"}
             </Button>
 
             {/* Micro Guarantee */}
             <div className="text-[10px] text-center text-gray-500 pt-2 font-mono flex items-center justify-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>SOC2 Type II Compliant — No Credit Card Required</span>
+              <span>Real-Time FastAPI Auth Connected &bull; Neon PostgreSQL</span>
             </div>
           </form>
         )}
