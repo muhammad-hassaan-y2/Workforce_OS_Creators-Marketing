@@ -18,19 +18,39 @@
   }
 }
 
-/* Custom Gradient Utilities */
+/* Custom Brand Gradient Utilities */
 .bg-brand-gradient {
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #2563EB 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #2563EB 100%);
 }
 
 .text-brand-gradient {
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #2563EB 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #2563EB 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.border-brand-gradient {
-  border-image: linear-gradient(135deg, #4F46E5, #7C3AED, #2563EB) 1;
+.text-gold-gradient {
+  background: linear-gradient(135deg, #FACC15 0%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Card Glow Utilities */
+.glow-card {
+  position: relative;
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.4), rgba(37, 99, 235, 0.2), rgba(250, 204, 21, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 /* Ambient Glow Animations */
@@ -64,20 +84,19 @@
   animation: orb-float-reverse 26s ease-in-out infinite;
 }
 
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+/* Custom Scrollbar for Chat & Code Blocks */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Prefers Reduced Motion override */
 @media (prefers-reduced-motion: reduce) {
   .animate-orb-1,
-  .animate-orb-2,
-  .animate-pulse-subtle {
+  .animate-orb-2 {
     animation: none !important;
   }
   * {
