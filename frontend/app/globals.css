@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-inter);
+  }
+
+  body {
+    background-color: #0B0B0F;
+    color: #F5F5F7;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom Gradient Utilities */
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #2563EB 100%);
+}
+
+.text-brand-gradient {
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #2563EB 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.border-brand-gradient {
+  border-image: linear-gradient(135deg, #4F46E5, #7C3AED, #2563EB) 1;
+}
+
+/* Ambient Glow Animations */
+@keyframes orb-float-slow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.1);
+    opacity: 0.55;
+  }
+}
+
+@keyframes orb-float-reverse {
+  0%, 100% {
+    transform: translate(0, 0) scale(1.05);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-35px, 25px) scale(0.95);
+    opacity: 0.5;
+  }
+}
+
+.animate-orb-1 {
+  animation: orb-float-slow 22s ease-in-out infinite;
+}
+
+.animate-orb-2 {
+  animation: orb-float-reverse 26s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Prefers Reduced Motion override */
+@media (prefers-reduced-motion: reduce) {
+  .animate-orb-1,
+  .animate-orb-2,
+  .animate-pulse-subtle {
+    animation: none !important;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
