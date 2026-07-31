@@ -6,6 +6,7 @@ export const NAV_LINKS = [
   { name: "Product", href: "#hero" },
   { name: "Agents", href: "#agents" },
   { name: "How It Works", href: "#how-it-works" },
+  { name: "CLI Install", href: "#cli" },
   { name: "Use Cases", href: "#use-cases" },
   { name: "Playground", href: "#playground" },
   { name: "Pricing", href: "#pricing" },
