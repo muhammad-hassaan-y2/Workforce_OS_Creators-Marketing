@@ -47,13 +47,13 @@ interface AgentModel {
 const AGENT_MODELS: AgentModel[] = [
   {
     id: "mesh",
-    name: "Orbital-4o Multi-Agent Mesh",
+    name: "Millo-4o Multi-Agent Mesh",
     badge: "All Agents Synchronized",
     tagline: "Coordinates Phone, Video Creation, Browser, and CLI agents automatically.",
     icon: Cpu,
     color: "bg-purple-600 text-white",
     accentBorder: "border-purple-500/50",
-    placeholder: "Ask Orbital-4o Mesh or command all agents simultaneously..."
+    placeholder: "Ask Millo-4o Mesh or command all agents simultaneously..."
   },
   {
     id: "phone",
@@ -133,7 +133,7 @@ export default function DashboardPage() {
         id: "1",
         sender: "assistant",
         agentId: "mesh",
-        text: "Hello! You are currently using Orbital-4o Multi-Agent Mesh. You can switch to individual agents (Phone Caller, AI Video Creation, Browser Control, CLI Ops) using the top Agent Selector.",
+        text: "Hello! You are currently using Millo-4o Multi-Agent Mesh. You can switch to individual agents (Phone Caller, AI Video Creation, Browser Control, CLI Ops) using the top Agent Selector.",
         timestamp: "09:14 AM"
       },
       {
@@ -168,7 +168,7 @@ export default function DashboardPage() {
           type: "video",
           title: "AI Content & Video Creation // Render Engine",
           details: {
-            script: "'Stop losing 60% of your day to SDR busywork. Orbital deploys AI agents that place calls and scale deals...'",
+            script: "'Stop losing 60% of your day to SDR busywork. Millo deploys AI agents that place calls and scale deals...'",
             progress: 92,
             resolution: "4K UHD (3840x2160)",
             target: "YouTube Shorts & Reels"
@@ -289,7 +289,7 @@ export default function DashboardPage() {
           id: (Date.now() + 1).toString(),
           sender: "assistant",
           agentId: "mesh",
-          text: `[Orbital-4o Multi-Agent Mesh] Task "${text}" dispatched in parallel across Phone, Video Creation, Browser, and CLI agents.`,
+          text: `[Millo-4o Multi-Agent Mesh] Task "${text}" dispatched in parallel across Phone, Video Creation, Browser, and CLI agents.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           agentWidget: {
             type: "browser",

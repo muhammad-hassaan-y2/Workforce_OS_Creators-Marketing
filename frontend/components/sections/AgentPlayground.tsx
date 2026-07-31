@@ -88,7 +88,7 @@ export default function AgentPlayground() {
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
-            Test Orbital Agent execution <br className="hidden sm:inline" />
+            Test Millo Agent execution <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-blue-400">
               live right in your browser.
             </span>

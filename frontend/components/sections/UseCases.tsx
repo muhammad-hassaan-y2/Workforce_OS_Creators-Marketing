@@ -53,7 +53,7 @@ export default function UseCases() {
       badge: "ZERO MANUAL DIALING",
       icon: TrendingUp,
       description:
-        "Free your closers to focus exclusively on live prospect conversations. Orbital agents handle all initial outreach, cold dialing, objection filtering, and appointment booking.",
+        "Free your closers to focus exclusively on live prospect conversations. Millo agents handle all initial outreach, cold dialing, objection filtering, and appointment booking.",
       bullets: [
         "Instant speed-to-lead response within 45 seconds of form fill",
         "Automated calendar booking straight into closer calendars",
@@ -111,7 +111,7 @@ export default function UseCases() {
           </h2>
 
           <p className="text-base sm:text-lg text-[#52525B]">
-            Select your operating role to see how Orbital transforms daily output.
+            Select your operating role to see how Millo transforms daily output.
           </p>
         </div>
 

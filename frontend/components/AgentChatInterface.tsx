@@ -23,7 +23,7 @@ export default function AgentChatInterface() {
     {
       id: "1",
       sender: "agent",
-      text: "Hello! I'm Orbital AI, your agent operating system assistant. I can coordinate Phone Callers, Browser Control, and CLI pipelines for Sales Agencies and Content Creators. How can I help you execute today?",
+      text: "Hello! I'm Millo AI, your agent operating system assistant. I can coordinate Phone Callers, Browser Control, and CLI pipelines for Sales Agencies and Content Creators. How can I help you execute today?",
       timestamp: "Just now",
       agentType: "orchestrator"
     }
@@ -169,7 +169,7 @@ export default function AgentChatInterface() {
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
-            Chat with Orbital Agent OS <br className="hidden sm:inline" />
+            Chat with Millo Agent OS <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-blue-400">
               in natural language.
             </span>
@@ -204,7 +204,7 @@ export default function AgentChatInterface() {
               </div>
               <div>
                 <div className="text-sm font-bold text-white flex items-center gap-2">
-                  Orbital Intelligence
+                  Millo Intelligence
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
                     ONLINE
                   </span>
@@ -290,7 +290,7 @@ export default function AgentChatInterface() {
                 className="flex items-center gap-2 text-xs text-purple-400 font-mono p-2"
               >
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Orbital Agent OS is processing instructions...</span>
+                <span>Millo Agent OS is processing instructions...</span>
               </motion.div>
             )}
             <div ref={messagesEndRef} />
@@ -308,7 +308,7 @@ export default function AgentChatInterface() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Tell Orbital Agent what to execute (e.g. 'Pitch sponsor media kit', 'Call lead Sarah')..."
+              placeholder="Tell Millo Agent what to execute (e.g. 'Pitch sponsor media kit', 'Call lead Sarah')..."
               className="flex-1 px-4 py-3 rounded-xl bg-[#09090D] border border-[#22222E] text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans"
             />
             <Button

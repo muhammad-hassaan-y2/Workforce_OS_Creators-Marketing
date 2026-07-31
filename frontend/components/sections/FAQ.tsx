@@ -26,7 +26,7 @@ export default function FAQ() {
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
             Everything you need to know about <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-blue-400">
-              deploying Orbital agents.
+              deploying Millo agents.
             </span>
           </h2>
 

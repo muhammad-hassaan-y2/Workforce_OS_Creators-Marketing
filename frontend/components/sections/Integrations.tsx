@@ -24,7 +24,7 @@ export default function Integrations() {
           </h2>
 
           <p className="text-base sm:text-lg text-[#A1A1AA]">
-            Connect Orbital agents to your existing CRM, dialer infrastructure, ad platforms, and custom backend webhooks in under 30 minutes.
+            Connect Millo agents to your existing CRM, dialer infrastructure, ad platforms, and custom backend webhooks in under 30 minutes.
           </p>
         </div>
 

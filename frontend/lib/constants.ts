@@ -1,6 +1,6 @@
-// Orbital Platform Constants & Content Configuration
+// Millo Platform Constants & Content Configuration
 // [PLACEHOLDER — Brand name can be swapped easily here]
-export const BRAND_NAME = "Orbital";
+export const BRAND_NAME = "Millo";
 
 export const NAV_LINKS = [
   { name: "Product", href: "#hero" },
@@ -65,7 +65,7 @@ export const AGENTS = [
       transcript: [
         { speaker: "Agent", text: "Hi Sarah, I saw your brand was looking for tech creator partnerships this quarter. Are you accepting media kit proposals?" },
         { speaker: "Lead", text: "We are! We're looking for YouTube and newsletter integrations for Q3." },
-        { speaker: "Agent", text: "Awesome. Orbital agents handle our media kit distribution and lock in guaranteed CPM rates. Can I send over our rate sheet for Thursday?" },
+        { speaker: "Agent", text: "Awesome. Millo agents handle our media kit distribution and lock in guaranteed CPM rates. Can I send over our rate sheet for Thursday?" },
         { speaker: "Lead", text: "Send over the invite and rate card, Thursday works great." }
       ]
     }
@@ -107,7 +107,7 @@ export const AGENTS = [
     previewData: {
       command: "orbital-ops sync --source sponsor-inquiries --dest hubspot-crm --dialer active",
       output: [
-        "[INFO] Initializing Orbital Ops Execution Bus v2.4",
+        "[INFO] Initializing Millo Ops Execution Bus v2.4",
         "[SUCCESS] Synced 142 enriched contacts to HubSpot CRM pipeline",
         "[TRIGGER] Dispatched lead payload to Phone Caller Agent [Queue ID: #8921]",
         "[STATUS] Campaign & content automation cycle completed in 1.24s"
@@ -182,14 +182,14 @@ export const PROOF_METRICS = [
 // [PLACEHOLDER — replace with real data]
 export const TESTIMONIALS = [
   {
-    quote: "Orbital replaced 4 full-time offshore VAs and tripled our outbound qualification volume in 30 days. Our team now focuses 100% on high-ticket closing.",
+    quote: "Millo replaced 4 full-time offshore VAs and tripled our outbound qualification volume in 30 days. Our team now focuses 100% on high-ticket closing.",
     author: "Marcus Vance",
     role: "Founder & Managing Director",
     company: "Vance Growth Media",
     image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
   },
   {
-    quote: "As a creator studio managing 12 tech channels, Orbital's Browser and Caller agents handle all brand deal inquiries and media kit outreach. We booked $140k in sponsorships effortlessly.",
+    quote: "As a creator studio managing 12 tech channels, Millo's Browser and Caller agents handle all brand deal inquiries and media kit outreach. We booked $140k in sponsorships effortlessly.",
     author: "Elena Rostova",
     role: "Creator & Studio Director",
     company: "MediaHive Studios",
@@ -279,12 +279,12 @@ export const PRICING_PLANS = [
 // FAQ Items
 export const FAQ_ITEMS = [
   {
-    question: "Is Orbital built for Creators & Influencers as well as Agencies?",
-    answer: "Yes! Orbital is designed for both sales/marketing agencies and digital creators/influencer studios. Creators deploy Browser Agents to automate sponsor outreach and social posting, Phone Agents to handle inbound brand inquiry calls, and CLI Agents to compile media kit analytics."
+    question: "Is Millo built for Creators & Influencers as well as Agencies?",
+    answer: "Yes! Millo is designed for both sales/marketing agencies and digital creators/influencer studios. Creators deploy Browser Agents to automate sponsor outreach and social posting, Phone Agents to handle inbound brand inquiry calls, and CLI Agents to compile media kit analytics."
   },
   {
     question: "How reliable are the voice calls, and how does it handle tough objections?",
-    answer: "Orbital's Phone Caller Agent runs on an ultra-low latency (<350ms) neural speech engine trained specifically on sales and sponsorship conversations. It understands context, pauses naturally when interrupted, and pulls from your custom objection guardrails to navigate pushback smoothly."
+    answer: "Millo's Phone Caller Agent runs on an ultra-low latency (<350ms) neural speech engine trained specifically on sales and sponsorship conversations. It understands context, pauses naturally when interrupted, and pulls from your custom objection guardrails to navigate pushback smoothly."
   },
   {
     question: "What safety guardrails prevent agents from making mistakes with clients or sponsors?",
@@ -292,11 +292,11 @@ export const FAQ_ITEMS = [
   },
   {
     question: "Is call recording and consent handled in compliance with laws?",
-    answer: "Yes. Orbital automatically detects the state/country code of the recipient and dynamically includes required call recording consent disclaimers (one-party or two-party consent compliance) before beginning qualification."
+    answer: "Yes. Millo automatically detects the state/country code of the recipient and dynamically includes required call recording consent disclaimers (one-party or two-party consent compliance) before beginning qualification."
   },
   {
-    question: "How long does it take to integrate Orbital with our current CRM and social stack?",
-    answer: "Most users complete setup in under 30 minutes. Orbital features 1-click native integrations for HubSpot, Salesforce, GoHighLevel, Close, YouTube, Instagram, and custom webhook endpoints."
+    question: "How long does it take to integrate Millo with our current CRM and social stack?",
+    answer: "Most users complete setup in under 30 minutes. Millo features 1-click native integrations for HubSpot, Salesforce, GoHighLevel, Close, YouTube, Instagram, and custom webhook endpoints."
   },
   {
     question: "Can we add custom agents or proprietary API integrations?",

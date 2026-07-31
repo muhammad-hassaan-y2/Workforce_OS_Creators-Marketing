@@ -13,19 +13,19 @@ export default function CLISection() {
     {
       id: "npm",
       label: "Global CLI Install",
-      code: "npm i -g @orbital-ai/cli",
-      description: "Install the Orbital Agent OS CLI globally via npm package manager."
+      code: "npm i -g @millo-ai/cli",
+      description: "Install the Millo Agent OS CLI globally via npm package manager."
     },
     {
       id: "npx",
       label: "Add Workforce Pod",
-      code: "npx @orbital-ai/cli workforce init --template agency-creator",
+      code: "npx @millo-ai/cli workforce init --template agency-creator",
       description: "Initialize and inject the multi-agent workforce (Caller, Browser, Video, CLI) into your repository."
     },
     {
       id: "deploy",
       label: "Deploy Workforce",
-      code: "orbital workforce deploy --agents caller,browser,video,cli --env production",
+      code: "millo workforce deploy --agents caller,browser,video,cli --env production",
       description: "Deploy active multi-agent mesh to sovereign cloud nodes or local runtime."
     }
   ];
@@ -53,7 +53,7 @@ export default function CLISection() {
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
-            Install Orbital CLI & Add <br className="hidden sm:inline" />
+            Install Millo CLI & Add <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-purple-400 to-yellow-400">
               Workforce Agents via NPM.
             </span>

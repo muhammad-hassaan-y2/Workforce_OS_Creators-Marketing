@@ -52,7 +52,7 @@ export default function OrchestrationShowcase() {
           </h2>
 
           <p className="text-base sm:text-lg text-[#A1A1AA] leading-relaxed">
-            Watch how Orbital agents pass control seamlessly: from initial web discovery to live telephone qualification and CRM pipeline updates.
+            Watch how Millo agents pass control seamlessly: from initial web discovery to live telephone qualification and CRM pipeline updates.
           </p>
 
           {/* Autoplay Controls */}

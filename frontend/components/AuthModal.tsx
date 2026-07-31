@@ -72,7 +72,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
           </div>
 
           <h3 className="text-2xl font-bold text-white tracking-tight">
-            {mode === "signup" ? "Deploy Your AI Workforce" : "Welcome Back to Orbital"}
+            {mode === "signup" ? "Deploy Your AI Workforce" : "Welcome Back to Millo"}
           </h3>
 
           <p className="text-xs text-gray-400">
@@ -115,7 +115,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
             <h4 className="text-lg font-bold text-white">
               {mode === "signup" ? "Account Created!" : "Authenticated!"}
             </h4>
-            <p className="text-xs text-gray-400">Launching your Orbital Agent Workspace...</p>
+            <p className="text-xs text-gray-400">Launching your Millo Agent Workspace...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -24,7 +24,7 @@ export default function Testimonials() {
           </h2>
 
           <p className="text-base sm:text-lg text-[#52525B]">
-            See how leading RevOps and sales agencies deploy Orbital to replace manual SDR busywork.
+            See how leading RevOps and sales agencies deploy Millo to replace manual SDR busywork.
           </p>
         </div>
 
