@@ -97,7 +97,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
           </div>
 
           <h3 className="text-2xl font-bold text-white tracking-tight">
-            {mode === "signup" ? "Deploy Your AI Workforce" : "Welcome Back to Millo"}
+            {mode === "signup" ? "Deploy Your AI Workforce" : "Welcome Back to Kaiso"}
           </h3>
 
           <p className="text-xs text-gray-400">
@@ -156,7 +156,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
             <h4 className="text-lg font-bold text-white">
               {mode === "signup" ? "Account Created in Neon DB!" : "Authenticated!"}
             </h4>
-            <p className="text-xs text-gray-400 font-mono">Redirecting to Millo Agent Workspace...</p>
+            <p className="text-xs text-gray-400 font-mono">Redirecting to Kaiso Agent Workspace...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

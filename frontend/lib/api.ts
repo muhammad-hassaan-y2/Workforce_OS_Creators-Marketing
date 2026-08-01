@@ -35,8 +35,8 @@ export async function signupUser(email: string, password: string, fullName: stri
 
   const data: AuthResponse = await res.json();
   if (typeof window !== "undefined") {
-    localStorage.setItem("millo_access_token", data.access_token);
-    localStorage.setItem("millo_user", JSON.stringify(data.user));
+    localStorage.setItem("kaiso_access_token", data.access_token);
+    localStorage.setItem("kaiso_user", JSON.stringify(data.user));
   }
   return data;
 }
@@ -55,8 +55,8 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 
   const data: AuthResponse = await res.json();
   if (typeof window !== "undefined") {
-    localStorage.setItem("millo_access_token", data.access_token);
-    localStorage.setItem("millo_user", JSON.stringify(data.user));
+    localStorage.setItem("kaiso_access_token", data.access_token);
+    localStorage.setItem("kaiso_user", JSON.stringify(data.user));
   }
   return data;
 }

@@ -10,7 +10,7 @@ import auth
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Millo Agent OS API",
+    title="Kaiso Agent OS API",
     description="Real-time FastAPI Backend with Neon PostgreSQL Integration for Autonomous Agents OS",
     version="2.4.0"
 )

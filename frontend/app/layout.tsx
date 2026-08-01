@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Millo — AI Agent Operating System for Sales, Marketing & Content Creators",
+  title: "Kaiso — AI Agent Operating System for Sales, Marketing & Content Creators",
   description: "Deploy autonomous AI agents that place calls, operate browsers, render 4K video shorts, and run backend CLI workflows — synchronized as one multi-agent workforce.",
   icons: {
     icon: "/favicon.svg",

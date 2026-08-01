@@ -27,7 +27,7 @@ export default function Navigation() {
 
     // Check if user is logged in via localStorage
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("millo_user");
+      const stored = localStorage.getItem("kaiso_user");
       if (stored) {
         try { setUserProfile(JSON.parse(stored)); } catch (e) {}
       }

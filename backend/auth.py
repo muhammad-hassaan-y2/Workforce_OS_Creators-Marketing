@@ -4,13 +4,13 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "millo_agent_os_super_secret_jwt_key_2026")
+SECRET_KEY = os.getenv("SECRET_KEY", "kaiso_agent_os_super_secret_jwt_key_2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days token
 
 def hash_password(password: str) -> str:
     # Use SHA-256 with salt for lightweight fast hashing
-    salt = "millo_salt_2026_"
+    salt = "kaiso_salt_2026_"
     return hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

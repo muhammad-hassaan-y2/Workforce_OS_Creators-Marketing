@@ -8,7 +8,7 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL", 
     os.getenv(
         "NEON_DATABASE_URL", 
-        "sqlite:///./millo_agent_os.db" # Default fallback for instant zero-error local development
+        "sqlite:///./kaiso_agent_os.db" # Default fallback for instant zero-error local development
     )
 )
 
