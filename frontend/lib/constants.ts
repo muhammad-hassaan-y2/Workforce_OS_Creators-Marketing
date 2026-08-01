@@ -220,59 +220,65 @@ export const INTEGRATIONS = [
   { name: "TikTok", category: "Social Platform" },
 ];
 
-// Pricing Plans
-// [PLACEHOLDER — replace with real data]
-export const PRICING_PLANS = [
+// Upgraded High-Converting Pricing Tiers
+export const PRICING_TIERS = [
   {
     name: "Creator & Solopreneur",
-    price: "$299",
+    description: "Designed for content creators, influencers, and solo RevOps operators automating sponsorships.",
+    price: "$199",
     period: "/month",
-    description: "Designed for content creators, influencers, and solo RevOps operators.",
-    badge: null,
-    highlight: false,
+    badge: "CREATOR SPECIAL",
+    ctaText: "Start 14-Day Free Sandbox",
+    ctaVariant: "outline" as const,
+    popular: false,
     features: [
-      "Up to 1,000 active call minutes / month",
-      "3 concurrent Browser Agent sessions",
-      "Automated sponsor inquiry qualification",
-      "Social media post & DM automation",
-      "Standard voice latency (<500ms)",
-      "Community Discord & Email support",
-    ],
-    cta: "Start 14-Day Free Trial",
+      "1,500 active call qualification minutes / month",
+      "5 concurrent Browser Agent scraping sessions",
+      "AI Video Short Scriptwriter & Media Kit pitcher",
+      "Social media DM & sponsor inquiry automation",
+      "Neural speech engine (<350ms latency)",
+      "HubSpot & Notion database integration",
+      "Community Discord & Email support"
+    ]
   },
   {
     name: "Growth Agency & Studio",
-    price: "$1,299",
+    description: "Designed for scaling sales agencies, RevOps teams, and creator studios running multi-channel outbound.",
+    price: "$899",
     period: "/month",
-    description: "Designed for scaling sales agencies and creator studios running multi-channel outbound.",
     badge: "MOST POPULAR",
-    highlight: true,
+    ctaText: "Launch Agent OS Workforce",
+    ctaVariant: "primary" as const,
+    popular: true,
     features: [
-      "Up to 8,000 active call minutes / month",
-      "25 concurrent Browser Agent sessions",
-      "Full Orchestration Engine (Multi-Agent Workflows)",
-      "Ultra-low voice latency (<350ms)",
-      "Custom Script & Objection Builder",
-      "Dedicated Slack Connect channel & Priority SLA",
-    ],
-    cta: "Deploy Operating System",
+      "10,000 active call qualification minutes / month",
+      "30 concurrent Browser Agent scraping sessions",
+      "Full Orchestration Mesh (Phone + Video + Browser + CLI)",
+      "4K MP4 Video Render Engine & Script Studio",
+      "Ultra-low neural voice latency (<300ms)",
+      "Custom Objection Filter & Script Guardrail Builder",
+      "Native HubSpot, Salesforce & GoHighLevel sync",
+      "Dedicated Slack Connect channel & 24/7 Priority SLA"
+    ]
   },
   {
     name: "Enterprise & Network",
+    description: "Dedicated sovereign server nodes, white-label client portals, and custom agent engineering.",
     price: "Custom",
     period: "",
-    description: "Dedicated server nodes, white-label portals, and custom agent engineering.",
     badge: "WHITE LABEL",
-    highlight: false,
+    ctaText: "Contact Enterprise Sales",
+    ctaVariant: "outline" as const,
+    popular: false,
     features: [
-      "Unlimited custom agent capacity & call minutes",
-      "Dedicated sovereign cloud infrastructure",
-      "Custom CLI/Ops integration development",
-      "HIPAA / SOC2 Type II compliance controls",
+      "Unlimited custom agent capacity & call volume",
+      "Dedicated sovereign cloud server infrastructure",
+      "Custom CLI/Ops Python & Bash pipeline engineering",
       "White-label client & creator reporting dashboard",
-      "1-on-1 RevOps engineering onboarding",
-    ],
-    cta: "Contact Enterprise Sales",
+      "HIPAA / SOC2 Type II compliance controls",
+      "Sovereign API key vault & enterprise guardrails",
+      "1-on-1 Dedicated Agent Engineer Onboarding"
+    ]
   }
 ];
 
