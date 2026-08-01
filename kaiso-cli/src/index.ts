@@ -5,14 +5,15 @@ import { loginCommand } from "./commands/login";
 import { chatCommand, startRepl } from "./commands/chat";
 import { draftCommand } from "./commands/draft";
 import { configGetCommand, configSetApiUrlCommand } from "./commands/config";
+import { ensureAuthenticated } from "./lib/auth";
 
-const VERSION = "0.1.2"; // keep in sync with package.json
+const VERSION = "0.1.3"; // keep in sync with package.json
 
 const program = new Command();
 
 program
   .name("kaiso")
-  .description("Kaiso — AI agent CLI for content creators, sales & marketing")
+  .description("Kaiso — Autonomous AI Agent CLI for Content Creators, Sales & Marketing")
   .version(VERSION);
 
 program
@@ -38,11 +39,9 @@ config
   .action(configSetApiUrlCommand);
 
 async function main() {
-  // Running `kaiso` with no arguments opens the branded interactive session,
-  // same as `kaiso chat` with no prompt.
   if (process.argv.length <= 2) {
-    printBanner();
-    await startRepl();
+    const user = await ensureAuthenticated();
+    await startRepl(user?.email);
     return;
   }
   await program.parseAsync(process.argv);

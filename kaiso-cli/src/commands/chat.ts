@@ -1,23 +1,34 @@
 import readline from "node:readline";
 import chalk from "chalk";
 import { loadConfig } from "../lib/config";
+import { ensureAuthenticated, getCurrentUser } from "../lib/auth";
+import { printBanner } from "../banner";
 
 export async function chatCommand(prompt?: string): Promise<void> {
+  const user = await ensureAuthenticated();
   if (!prompt) {
-    await startRepl();
+    await startRepl(user?.email);
     return;
   }
   await sendAndRender(prompt);
 }
 
-export async function startRepl(): Promise<void> {
-  console.log(chalk.bold.magenta("⚡ Kaiso Interactive Agent Terminal"));
-  console.log(chalk.gray("Type instructions to command Phone, Video, Browser & CLI agents (or 'exit' to quit).\n"));
+export async function startRepl(initialEmail?: string): Promise<void> {
+  let userEmail = initialEmail;
+  if (!userEmail) {
+    const u = await getCurrentUser();
+    userEmail = u?.email;
+  }
+
+  printBanner(userEmail);
+
+  console.log(chalk.bold.cyan("⚡ Kaiso Agent Terminal") + chalk.gray(" (Claude Code / Codex REPL Mode)"));
+  console.log(chalk.gray("Command Phone, Video, Browser & CLI agents directly from your terminal. Type 'exit' to quit.\n"));
 
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: chalk.cyan("kaiso> ")
+    prompt: chalk.bold.cyan("kaiso ") + chalk.bold.magenta("❯ ")
   });
 
   rl.prompt();
@@ -35,19 +46,26 @@ export async function startRepl(): Promise<void> {
   });
 
   rl.on("close", () => {
-    console.log(chalk.dim("\nGoodbye.\n"));
+    console.log(chalk.gray("\n[KAISO OS] Session terminated gracefully. Goodbye!\n"));
     process.exit(0);
   });
 }
 
 async function sendAndRender(text: string): Promise<void> {
-  const { apiUrl } = loadConfig();
-  console.log(chalk.yellow(`\n[DISPATCH] Sending request to FastAPI Python Agent Worker...`));
+  const { apiUrl, token } = loadConfig();
+
+  console.log(chalk.yellow(`\n╭─ 🚀 DISPATCHING MULTI-AGENT INSTRUCTION`));
+  console.log(chalk.gray(`│ Prompt  : "${text}"`));
+  console.log(chalk.gray(`│ Backend : ${apiUrl}`));
+  console.log(chalk.yellow(`╰─ ⏳ Executing Python Agent Worker...`));
 
   try {
     const res = await fetch(`${apiUrl}/api/agents/run`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ prompt: text })
     });
 
@@ -56,15 +74,27 @@ async function sendAndRender(text: string): Promise<void> {
     }
 
     const data = await res.json();
-    
-    console.log(chalk.bold.green(`\n🤖 Agent Worker: ${data.agent}`));
-    console.log(chalk.bold.white(`  Status: ${data.status}`));
-    console.log(chalk.white(`  Output: ${data.message}`));
-    
-    if (data.data) {
-      console.log(chalk.dim(`  Details: ${JSON.stringify(data.data, null, 2)}`));
+
+    console.log(chalk.gray("\n┌────────────────────────────────────────────────────────────────┐"));
+    console.log(chalk.gray("│ ") + chalk.bold.green(`🤖 AGENT EXECUTED: ${data.agent}`) + " ".repeat(Math.max(0, 44 - data.agent.length)) + chalk.gray("│"));
+    console.log(chalk.gray("├────────────────────────────────────────────────────────────────┤"));
+    console.log(chalk.gray("│ ") + chalk.white(`Status  : `) + chalk.bold.emerald ? chalk.bold.green(data.status) : chalk.bold.green(data.status));
+    console.log(chalk.gray("│ ") + chalk.white(`Message : `) + chalk.cyan(data.message));
+
+    if (data.latency_ms) {
+      console.log(chalk.gray("│ ") + chalk.white(`Latency : `) + chalk.yellow(`${data.latency_ms}ms`));
     }
-    console.log();
+
+    if (data.data) {
+      console.log(chalk.gray("├────────────────────────────────────────────────────────────────┤"));
+      console.log(chalk.gray("│ ") + chalk.bold.yellow("EXECUTION TELEMETRY & DATA:"));
+      const lines = JSON.stringify(data.data, null, 2).split("\n");
+      lines.forEach((l) => {
+        console.log(chalk.gray("│   ") + chalk.gray(l));
+      });
+    }
+
+    console.log(chalk.gray("└────────────────────────────────────────────────────────────────┘\n"));
 
   } catch (err: any) {
     console.error(chalk.red(`\n✖ Agent Execution Error: ${err.message}\n`));
