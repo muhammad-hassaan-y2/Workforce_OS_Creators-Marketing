@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "commonjs",
   "bin": {
-    "kaiso": "./dist/index.js"
+    "kaiso": "dist/index.js"
   },
   "files": [
     "dist",
