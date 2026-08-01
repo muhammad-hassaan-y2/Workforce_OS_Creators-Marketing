@@ -1,5 +1,5 @@
 {
-  "name": "@kaiso-ai/cli",
+  "name": "kaiso-ai",
   "version": "0.1.0",
   "description": "Kaiso — AI agent CLI for content creators, sales & marketing teams",
   "license": "MIT",
