@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
+import { Spinner, Runner, PulseDot } from "@/components/ui/Spinner";
 import { 
   Bot, 
   User, 
@@ -547,9 +548,7 @@ export default function DashboardPage() {
                           <span>Progress: {msg.agentWidget.details.progress}%</span>
                           <span className="text-indigo-400">{msg.agentWidget.details.resolution}</span>
                         </div>
-                        <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-yellow-400" style={{ width: `${msg.agentWidget.details.progress}%` }} />
-                        </div>
+                        <Runner progress={msg.agentWidget.details.progress} color="gradient" height="h-2" />
                         <div className="text-gray-400 italic text-[11px]">{msg.agentWidget.details.script}</div>
                       </div>
                     )}
@@ -594,7 +593,7 @@ export default function DashboardPage() {
 
           {isGenerating && (
             <div className="flex items-center gap-3 text-xs text-purple-400 font-mono">
-              <RefreshCw className="w-4 h-4 animate-spin" />
+              <Spinner size="sm" color="purple" />
               <span>{activeAgent.name} is processing instruction...</span>
             </div>
           )}

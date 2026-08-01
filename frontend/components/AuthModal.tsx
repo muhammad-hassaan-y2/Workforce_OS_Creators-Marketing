@@ -6,6 +6,7 @@ import { X, ShieldCheck, ArrowRight, Video, Briefcase, TrendingUp, AlertCircle, 
 import { Button } from "./ui/Button";
 import Logo from "./Logo";
 import { signupUser, loginUser } from "@/lib/api";
+import { Spinner, Runner } from "./ui/Spinner";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -253,6 +254,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
               />
             </div>
 
+            {/* Indeterminate Runner when loading */}
+            {isLoading && (
+              <div className="space-y-1 py-1">
+                <Runner indeterminate color="purple" height="h-1.5" />
+                <div className="text-[10px] text-center font-mono text-purple-400">Authenticating with FastAPI & Neon PostgreSQL...</div>
+              </div>
+            )}
+
             {/* Submit Button */}
             <Button 
               variant="primary" 
@@ -260,7 +269,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
               type="submit" 
               disabled={isLoading}
               className="w-full justify-center mt-2" 
-              icon={isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+              icon={isLoading ? <Spinner size="sm" color="white" /> : <ArrowRight className="w-4 h-4" />}
             >
               {isLoading 
                 ? "Connecting to FastAPI..." 
