@@ -41,7 +41,7 @@ function promptInput(query: string, hidden: boolean = false): Promise<string> {
 export async function login(): Promise<void> {
   const { apiUrl } = loadConfig();
 
-  console.log(chalk.bold.purple("\n🔒 Kaiso Agent OS CLI — Terminal Authentication"));
+  console.log(chalk.bold.magenta("\n🔒 Kaiso Agent OS CLI — Terminal Authentication"));
   console.log(chalk.gray(`Connecting to FastAPI Backend: ${apiUrl}\n`));
 
   const email = await promptInput(chalk.cyan("Enter Email: "));
@@ -75,7 +75,7 @@ export async function login(): Promise<void> {
     saveConfig({ token: data.access_token });
     console.log(chalk.bold.green(`\n✓ Authentication Successful!`));
     console.log(chalk.white(`  Operator: ${chalk.bold(data.user.full_name || data.user.email)}`));
-    console.log(chalk.white(`  Role: ${chalk.purple(data.user.role)}`));
+    console.log(chalk.white(`  Role: ${chalk.magenta(data.user.role)}`));
     console.log(chalk.gray(`  Token saved to ~/.kaiso/config.json\n`));
 
   } catch (err: any) {
@@ -86,7 +86,7 @@ export async function login(): Promise<void> {
 export async function signup(): Promise<void> {
   const { apiUrl } = loadConfig();
 
-  console.log(chalk.bold.purple("\n🚀 Kaiso Agent OS CLI — Account Registration"));
+  console.log(chalk.bold.magenta("\n🚀 Kaiso Agent OS CLI — Account Registration"));
   console.log(chalk.gray(`Connecting to FastAPI Backend: ${apiUrl}\n`));
 
   const fullName = await promptInput(chalk.cyan("Full Name: "));

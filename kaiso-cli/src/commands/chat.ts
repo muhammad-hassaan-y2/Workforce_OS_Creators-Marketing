@@ -11,7 +11,7 @@ export async function chatCommand(prompt?: string): Promise<void> {
 }
 
 export async function startRepl(): Promise<void> {
-  console.log(chalk.bold.purple("⚡ Kaiso Interactive Agent Terminal"));
+  console.log(chalk.bold.magenta("⚡ Kaiso Interactive Agent Terminal"));
   console.log(chalk.gray("Type instructions to command Phone, Video, Browser & CLI agents (or 'exit' to quit).\n"));
 
   const rl = readline.createInterface({
