@@ -4,254 +4,281 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "../ui/Button";
-import { PhoneCall, Globe, Terminal, ArrowRight, Sparkles, CheckCircle2, ShieldCheck, Video, Zap, Activity, Cpu } from "lucide-react";
+import { 
+  ShieldCheck, 
+  Lock, 
+  Clock, 
+  Globe, 
+  Video, 
+  FileText, 
+  CheckCircle2, 
+  ArrowRight, 
+  Sparkles,
+  Zap,
+  Key,
+  Cpu,
+  Quote
+} from "lucide-react";
 
 export default function Hero() {
-  const [activeAgentPreview, setActiveAgentPreview] = useState<"caller" | "browser" | "video" | "cli">("caller");
+  const [activeNode, setActiveNode] = useState<string>("center");
+
+  const nodes = [
+    {
+      id: "guardrails",
+      title: "Least Privilege",
+      subtitle: "Grant minimum access for every agent task — nothing more.",
+      icon: Lock,
+      position: "top-0 left-1/2 -translate-x-1/2 -translate-y-6"
+    },
+    {
+      id: "voice",
+      title: "Just-in-Time Voice",
+      subtitle: "Sub-310ms neural voice calls tailored to the lead at hand.",
+      icon: Clock,
+      position: "top-1/4 -left-12 sm:-left-20"
+    },
+    {
+      id: "browser",
+      title: "Universal Browser",
+      subtitle: "One autonomous engine for all web portals & brand deal scraping.",
+      icon: Globe,
+      position: "top-1/4 -right-12 sm:-right-20"
+    },
+    {
+      id: "video",
+      title: "Verified AI Video",
+      subtitle: "Automated 4K short video scriptwriting & MP4 rendering.",
+      icon: Video,
+      position: "bottom-10 -left-8 sm:-left-16"
+    },
+    {
+      id: "audit",
+      title: "Auditable CLI Ops",
+      subtitle: "Every agent action is logged, traceable, and tamper-proof.",
+      icon: FileText,
+      position: "bottom-10 -right-8 sm:-right-16"
+    }
+  ];
 
   return (
-    <section id="hero" className="relative pt-36 pb-24 md:pt-48 md:pb-36 bg-[#07070A] overflow-hidden">
-      {/* Background Ambient Cyber Gradient Orbs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] md:w-[900px] md:h-[900px] bg-gradient-to-tr from-indigo-600/20 via-purple-600/20 to-blue-600/15 rounded-full blur-[150px] pointer-events-none animate-orb-1" />
-      <div className="absolute top-1/3 left-1/4 w-[450px] h-[450px] bg-amber-500/10 rounded-full blur-[130px] pointer-events-none animate-orb-2" />
-
-      {/* Cyber Grid Lines */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] pointer-events-none" />
+    <section id="hero" className="relative pt-32 pb-24 md:pt-40 md:pb-32 bg-[#090814] overflow-hidden text-white">
+      
+      {/* Teleport Ambient Deep Purple Radial Glows */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[850px] bg-gradient-to-tr from-purple-900/30 via-indigo-900/25 to-fuchsia-900/20 rounded-full blur-[180px] pointer-events-none" />
+      <div className="absolute top-1/4 right-10 w-[400px] h-[400px] bg-violet-600/15 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-4xl mx-auto space-y-8">
+        
+        {/* Main Teleport Split Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Cyber Eyebrow Badge */}
-          <motion.div 
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#12121A] border border-purple-500/30 shadow-lg shadow-purple-950/40"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-cyber-gradient font-mono">
-              AI AGENT OS FOR AGENCIES, CREATORS & REVOPS
-            </span>
-          </motion.div>
+          {/* Left Column (Teleport Headline & Stats) */}
+          <div className="lg:col-span-6 space-y-8 text-left">
+            
+            {/* Pill Tag (Teleport Purple) */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-purple-950/60 border border-purple-500/50 shadow-md text-[11px] font-mono font-bold tracking-widest text-purple-300 uppercase"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>AGENTIC WORKFORCE OS</span>
+            </motion.div>
 
-          {/* Headline - Apple-style massive tight tracking */}
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.05]"
-          >
-            Your autonomous AI workforce <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-400">
-              never stops executing.
-            </span>
-          </motion.h1>
+            {/* Massive Teleport Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-4xl sm:text-6xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] text-white"
+            >
+              Orchestrate every lead. <br />
+              <span className="text-teleport-purple">
+                Power every agent.
+              </span>
+            </motion.h1>
 
-          {/* Subheadline */}
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-lg sm:text-xl text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed font-normal"
-          >
-            Deploy autonomous AI agents that place sales calls, operate browsers, render 4K video shorts, and run terminal pipelines — synchronized as one OS.
-          </motion.p>
+            {/* Subheadline */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-base sm:text-lg text-gray-300 max-w-xl leading-relaxed font-normal"
+            >
+              Kaiso secures, coordinates, and deploys autonomous AI agents across your sales, marketing, and content infrastructure — with sub-310ms voice, automated browser scraping, and 4K video rendering.
+            </motion.p>
 
-          {/* Single Primary CTA */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="flex items-center justify-center pt-2"
-          >
-            <Link href="/dashboard">
-              <Button variant="primary" size="lg" className="px-9 py-4 text-base shadow-xl shadow-purple-600/30" icon={<ArrowRight className="w-5 h-5" />}>
-                Launch Agent OS Dashboard
-              </Button>
-            </Link>
-          </motion.div>
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-wrap items-center gap-4 pt-2"
+            >
+              <Link href="/dashboard">
+                <Button 
+                  variant="primary" 
+                  size="lg" 
+                  className="px-8 py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-xl shadow-purple-950/60 border border-purple-400/40"
+                  icon={<ArrowRight className="w-5 h-5" />}
+                >
+                  Launch Agent OS Dashboard
+                </Button>
+              </Link>
+            </motion.div>
 
-          {/* Micro trust indicators */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="pt-2 flex flex-wrap items-center justify-center gap-6 text-xs text-gray-400 font-medium"
-          >
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" /> SOC2 Type II Compliant
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-purple-400" /> Sub-310ms Neural Voice
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-amber-400" /> 4K Video Render Engine
-            </span>
-          </motion.div>
+            {/* Horizontal Stats Strip (Teleport style) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="pt-6 border-t border-purple-900/40 grid grid-cols-4 gap-4 text-left font-mono"
+            >
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-white">10M+</div>
+                <div className="text-[11px] text-gray-400 mt-1 leading-tight font-sans">Leads Processed</div>
+              </div>
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-purple-300">1,000+</div>
+                <div className="text-[11px] text-gray-400 mt-1 leading-tight font-sans">Agencies & Studios</div>
+              </div>
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-white">99.99%</div>
+                <div className="text-[11px] text-gray-400 mt-1 leading-tight font-sans">Agent Availability</div>
+              </div>
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-purple-300">&lt;310ms</div>
+                <div className="text-[11px] text-gray-400 mt-1 leading-tight font-sans">Voice Latency</div>
+              </div>
+            </motion.div>
+
+          </div>
+
+          {/* Right Column (Exact Teleport Hexagon Hub & Radial Node Diagram) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center py-12">
+            
+            {/* Diagram Outer Container */}
+            <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
+              
+              {/* Concentric Glowing Purple Ripple Rings */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-[340px] h-[340px] rounded-full border border-purple-500/20 animate-ripple" />
+                <div className="absolute w-[240px] h-[240px] rounded-full border border-purple-500/40 animate-ripple" style={{ animationDelay: "1s" }} />
+                <div className="absolute w-[160px] h-[160px] rounded-full border border-purple-500/60" />
+              </div>
+
+              {/* CENTRAL NEON GLOWING HEXAGON KEYHOLE HUB */}
+              <motion.div
+                whileHover={{ scale: 1.08 }}
+                className="relative z-20 w-32 h-36 bg-gradient-to-b from-purple-600 via-indigo-900 to-[#0F0B24] border-2 border-purple-400 rounded-3xl shadow-[0_0_60px_rgba(168,85,247,0.6)] flex flex-col items-center justify-center cursor-pointer group"
+              >
+                {/* Hexagon Inner Glowing Icon */}
+                <div className="w-14 h-14 rounded-full bg-white text-purple-900 flex items-center justify-center shadow-inner font-bold">
+                  <Key className="w-7 h-7 text-purple-900 fill-purple-900" />
+                </div>
+                <span className="text-[11px] font-mono font-bold text-white mt-2 tracking-widest uppercase">
+                  KAISO CORE
+                </span>
+              </motion.div>
+
+              {/* BRANCHING RADIAL NODE CARDS (Teleport Style) */}
+              
+              {/* 1. Top Node: Least Privilege */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20">
+                <div className="glass-teleport-card p-3 rounded-2xl w-48 text-left space-y-1 transition-all hover:scale-105">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs font-bold text-white">Least Privilege</div>
+                  </div>
+                  <p className="text-[10px] text-gray-300 leading-snug">Grant minimum access for every agent task — nothing more.</p>
+                </div>
+              </div>
+
+              {/* 2. Left Middle Node: Just-in-Time Voice */}
+              <div className="absolute top-1/3 -left-4 sm:-left-8 z-20">
+                <div className="glass-teleport-card p-3 rounded-2xl w-44 text-left space-y-1 transition-all hover:scale-105">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs font-bold text-white">Just-in-Time</div>
+                  </div>
+                  <p className="text-[10px] text-gray-300 leading-snug">Sub-310ms voice calls tailored to the lead at hand.</p>
+                </div>
+              </div>
+
+              {/* 3. Right Middle Node: Universal Browser */}
+              <div className="absolute top-1/3 -right-4 sm:-right-8 z-20">
+                <div className="glass-teleport-card p-3 rounded-2xl w-44 text-left space-y-1 transition-all hover:scale-105">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                      <Globe className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs font-bold text-white">Universal</div>
+                  </div>
+                  <p className="text-[10px] text-gray-300 leading-snug">One platform for all identities & web infrastructure.</p>
+                </div>
+              </div>
+
+              {/* 4. Bottom Left Node: Verified AI Video */}
+              <div className="absolute bottom-2 left-0 sm:left-2 z-20">
+                <div className="glass-teleport-card p-3 rounded-2xl w-44 text-left space-y-1 transition-all hover:scale-105">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs font-bold text-white">Verified</div>
+                  </div>
+                  <p className="text-[10px] text-gray-300 leading-snug">Strong identity verification for humans & agents.</p>
+                </div>
+              </div>
+
+              {/* 5. Bottom Right Node: Auditable CLI */}
+              <div className="absolute bottom-2 right-0 sm:right-2 z-20">
+                <div className="glass-teleport-card p-3 rounded-2xl w-44 text-left space-y-1 transition-all hover:scale-105">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs font-bold text-white">Auditable</div>
+                  </div>
+                  <p className="text-[10px] text-gray-300 leading-snug">Every action is logged, traceable, and tamper-proof.</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
 
-        {/* Hero Interactive Product Mockup */}
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.4 }}
-          className="mt-16 max-w-5xl mx-auto rounded-[28px] bg-[#12121A] border border-purple-500/30 p-4 sm:p-6 shadow-2xl shadow-purple-950/40 relative group"
-        >
-          {/* Window Top Header */}
-          <div className="flex items-center justify-between pb-4 px-3 border-b border-[#222232]">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-[#FF5F56]" />
-              <span className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
-              <span className="w-3 h-3 rounded-full bg-[#27C93F]" />
-              <span className="ml-3 text-xs font-mono text-gray-400">orbital-os // multi-agent-runtime-mesh</span>
+        {/* Teleport Bottom Strip (Built for Modern Infrastructure & Testimonial Quote) */}
+        <div className="mt-16 pt-8 border-t border-purple-900/30 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+          
+          <div className="md:col-span-6 space-y-3 text-left">
+            <div className="text-xs font-mono font-bold uppercase tracking-wider text-purple-400">
+              Built for Modern Infrastructure
             </div>
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                4 AGENTS RUNNING LIVE
-              </span>
+            <div className="flex items-center gap-6 text-gray-400 font-mono text-xs overflow-x-auto">
+              <span className="flex items-center gap-1.5 text-white font-bold"><Cpu className="w-4 h-4 text-purple-400" /> HubSpot CRM</span>
+              <span className="flex items-center gap-1.5 text-white font-bold"><Zap className="w-4 h-4 text-amber-400" /> Salesforce</span>
+              <span className="flex items-center gap-1.5 text-white font-bold"><Globe className="w-4 h-4 text-blue-400" /> GoHighLevel</span>
+              <span className="flex items-center gap-1.5 text-white font-bold"><Video className="w-4 h-4 text-indigo-400" /> YouTube & Reels</span>
             </div>
           </div>
 
-          {/* Interactive Agent Tabs inside Dashboard Mockup */}
-          <div className="pt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-            
-            {/* Phone Caller Card */}
-            <div 
-              onClick={() => setActiveAgentPreview("caller")}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                activeAgentPreview === "caller"
-                  ? "bg-[#1A1A26] border-amber-400/50 shadow-lg"
-                  : "bg-[#09090D] border-[#222232] hover:border-gray-700"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 rounded-xl bg-amber-400/10 text-amber-400">
-                  <PhoneCall className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                  LIVE CALL
-                </span>
-              </div>
-              <div className="text-xs font-bold text-white">Phone Caller Agent</div>
-              <div className="text-[11px] text-gray-400 font-mono mt-1">Qualifying inbound leads (02:45)</div>
-            </div>
-
-            {/* AI Video Creation Card */}
-            <div 
-              onClick={() => setActiveAgentPreview("video")}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                activeAgentPreview === "video"
-                  ? "bg-[#1A1A26] border-purple-500/50 shadow-lg"
-                  : "bg-[#09090D] border-[#222232] hover:border-gray-700"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
-                  <Video className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">
-                  RENDERING 88%
-                </span>
-              </div>
-              <div className="text-xs font-bold text-white">AI Video & Content</div>
-              <div className="text-[11px] text-gray-400 font-mono mt-1">Rendering 4K Short Video MP4</div>
-            </div>
-
-            {/* Browser Control Card */}
-            <div 
-              onClick={() => setActiveAgentPreview("browser")}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                activeAgentPreview === "browser"
-                  ? "bg-[#1A1A26] border-blue-500/50 shadow-lg"
-                  : "bg-[#09090D] border-[#222232] hover:border-gray-700"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-                  <Globe className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
-                  SCRAPING
-                </span>
-              </div>
-              <div className="text-xs font-bold text-white">Browser Control</div>
-              <div className="text-[11px] text-gray-400 font-mono mt-1">Scraping 50 brand sponsors</div>
-            </div>
-
-            {/* CLI Ops Card */}
-            <div 
-              onClick={() => setActiveAgentPreview("cli")}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                activeAgentPreview === "cli"
-                  ? "bg-[#1A1A26] border-emerald-500/50 shadow-lg"
-                  : "bg-[#09090D] border-[#222232] hover:border-gray-700"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-                  <Terminal className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                  EXECUTING
-                </span>
-              </div>
-              <div className="text-xs font-bold text-white">CLI / Ops Agent</div>
-              <div className="text-[11px] text-gray-400 font-mono mt-1">Syncing CRM & Slack alerts</div>
-            </div>
-
+          <div className="md:col-span-6 glass-teleport-card p-5 rounded-2xl text-left flex items-start gap-3">
+            <Quote className="w-6 h-6 text-purple-400 shrink-0 mt-1" />
+            <p className="text-xs text-gray-200 leading-relaxed italic font-sans">
+              "Kaiso gives us the visibility and multi-agent control we need without slowing our closing teams down."
+            </p>
           </div>
 
-          {/* Active Preview Display Window */}
-          <div className="mt-4 p-5 rounded-2xl bg-[#09090D] border border-[#222232] space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-gray-800 pb-2 text-[11px] text-gray-400">
-              <span className="text-purple-400 font-bold flex items-center gap-2">
-                <Activity className="w-4 h-4 text-purple-400" />
-                ACTIVE AGENT INSPECTOR: {activeAgentPreview.toUpperCase()}
-              </span>
-              <span className="text-emerald-400">STATUS OK</span>
-            </div>
-
-            {activeAgentPreview === "caller" && (
-              <div className="space-y-1.5 text-gray-300">
-                <div className="text-amber-400 font-bold">&gt; Voice Engine: Neural Sub-310ms Connected</div>
-                <div className="italic text-gray-400">"Objection handled: Custom SDR workflow automation vs manual offshore VAs..."</div>
-              </div>
-            )}
-
-            {activeAgentPreview === "video" && (
-              <div className="space-y-1.5 text-gray-300">
-                <div className="text-indigo-400 font-bold">&gt; Video Engine: 4K MP4 Asset Render 88%</div>
-                <div className="italic text-gray-400">"Generated AI script & captions: Top 5 RevOps Automation Hacks..."</div>
-              </div>
-            )}
-
-            {activeAgentPreview === "browser" && (
-              <div className="space-y-1.5 text-gray-300">
-                <div className="text-blue-400">&gt; DOM Navigator: https://linkedin.com/sales/search</div>
-                <div className="italic text-gray-400">"Extracted 50 verified contact profiles & auto-submitted Media Kit..."</div>
-              </div>
-            )}
-
-            {activeAgentPreview === "cli" && (
-              <div className="space-y-1.5 text-gray-300">
-                <div className="text-emerald-400">&gt; Command: orbital sync --dest hubspot-crm --webhook active</div>
-                <div className="italic text-gray-400">"Synced 142 records to HubSpot CRM pipeline in 1.12s..."</div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer Orchestration Status */}
-          <div className="mt-4 pt-3 border-t border-[#222232] flex items-center justify-between text-xs text-gray-400 font-mono">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              Sovereign Cloud Mesh Connected
-            </span>
-            <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1">
-              Open Full Dashboard &rarr;
-            </Link>
-          </div>
-        </motion.div>
+        </div>
 
       </div>
     </section>
