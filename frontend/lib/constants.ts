@@ -282,6 +282,8 @@ export const PRICING_TIERS = [
   }
 ];
 
+export const PRICING_PLANS = PRICING_TIERS;
+
 // FAQ Items
 export const FAQ_ITEMS = [
   {

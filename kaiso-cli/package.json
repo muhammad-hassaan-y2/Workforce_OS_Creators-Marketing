@@ -1,0 +1,49 @@
+{
+  "name": "@kaiso-ai/cli",
+  "version": "0.1.0",
+  "description": "Kaiso — AI agent CLI for content creators, sales & marketing teams",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "kaiso": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsup src/index.ts --format cjs --target node18 --clean --shims",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "agent",
+    "content",
+    "marketing"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "figlet": "^1.7.0",
+    "gradient-string": "^2.0.2",
+    "open": "^8.4.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/figlet": "^1.5.8",
+    "@types/gradient-string": "^1.1.6",
+    "@types/node": "^20.14.9",
+    "@types/ws": "^8.5.10",
+    "tsup": "^8.2.4",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}
