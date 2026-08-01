@@ -6,7 +6,7 @@ import { chatCommand, startRepl } from "./commands/chat";
 import { draftCommand } from "./commands/draft";
 import { configGetCommand, configSetApiUrlCommand } from "./commands/config";
 
-const VERSION = "0.1.0"; // keep in sync with package.json
+const VERSION = "0.1.1"; // keep in sync with package.json
 
 const program = new Command();
 

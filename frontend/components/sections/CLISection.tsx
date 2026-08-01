@@ -13,13 +13,13 @@ export default function CLISection() {
     {
       id: "npm",
       label: "Global CLI Install",
-      code: "npm i -g @kaiso-ai/cli",
+      code: "npm i -g @muhammad-hassaan-shaukat/kaiso-ai",
       description: "Install the Kaiso Agent OS CLI globally via npm package manager."
     },
     {
       id: "npx",
       label: "Add Workforce Pod",
-      code: "npx @kaiso-ai/cli workforce init --template agency-creator",
+      code: "npx @muhammad-hassaan-shaukat/kaiso-ai workforce init --template agency-creator",
       description: "Initialize and inject the multi-agent workforce (Caller, Browser, Video, CLI) into your repository."
     },
     {
