@@ -169,6 +169,44 @@ export default function Hero() {
                 <div className="absolute w-[160px] h-[160px] rounded-full border border-purple-500/60" />
               </div>
 
+              {/* SOLID NON-TRANSPARENT GLOWING SVG CONNECTION LINES */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible">
+                <defs>
+                  <linearGradient id="lineGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#C084FC" stopOpacity="1" />
+                    <stop offset="50%" stopColor="#A855F7" stopOpacity="1" />
+                    <stop offset="100%" stopColor="#6366F1" stopOpacity="1" />
+                  </linearGradient>
+                  <filter id="neonFilter" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* Line 1: Center to Top Node */}
+                <line x1="50%" y1="50%" x2="50%" y2="14%" stroke="url(#lineGlow)" strokeWidth="2.5" filter="url(#neonFilter)" />
+                <circle cx="50%" cy="14%" r="4" fill="#C084FC" />
+
+                {/* Line 2: Center to Left Node */}
+                <line x1="50%" y1="50%" x2="18%" y2="38%" stroke="url(#lineGlow)" strokeWidth="2.5" filter="url(#neonFilter)" />
+                <circle cx="18%" cy="38%" r="4" fill="#C084FC" />
+
+                {/* Line 3: Center to Right Node */}
+                <line x1="50%" y1="50%" x2="82%" y2="38%" stroke="url(#lineGlow)" strokeWidth="2.5" filter="url(#neonFilter)" />
+                <circle cx="82%" cy="38%" r="4" fill="#C084FC" />
+
+                {/* Line 4: Center to Bottom-Left Node */}
+                <line x1="50%" y1="50%" x2="22%" y2="82%" stroke="url(#lineGlow)" strokeWidth="2.5" filter="url(#neonFilter)" />
+                <circle cx="22%" cy="82%" r="4" fill="#C084FC" />
+
+                {/* Line 5: Center to Bottom-Right Node */}
+                <line x1="50%" y1="50%" x2="78%" y2="82%" stroke="url(#lineGlow)" strokeWidth="2.5" filter="url(#neonFilter)" />
+                <circle cx="78%" cy="82%" r="4" fill="#C084FC" />
+              </svg>
+
               {/* CENTRAL NEON GLOWING HEXAGON KEYHOLE HUB */}
               <motion.div
                 whileHover={{ scale: 1.08 }}
