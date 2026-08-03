@@ -1,0 +1,9 @@
+C:\Users\moham\Downloads\Projectss\WorkForce OS\openclaw-cli\target\debug\deps\reqwest_eventsource-8aeb83c5b8cd2b07.d: C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\lib.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\error.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\event_source.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\reqwest_ext.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\retry.rs
+
+C:\Users\moham\Downloads\Projectss\WorkForce OS\openclaw-cli\target\debug\deps\libreqwest_eventsource-8aeb83c5b8cd2b07.rmeta: C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\lib.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\error.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\event_source.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\reqwest_ext.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\retry.rs
+
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\lib.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\error.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\event_source.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\reqwest_ext.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\reqwest-eventsource-0.6.0\src\retry.rs:

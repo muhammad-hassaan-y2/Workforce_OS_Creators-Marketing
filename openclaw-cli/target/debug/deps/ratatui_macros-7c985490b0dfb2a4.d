@@ -1,0 +1,10 @@
+C:\Users\moham\Downloads\Projectss\WorkForce OS\openclaw-cli\target\debug\deps\ratatui_macros-7c985490b0dfb2a4.d: C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\lib.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\layout.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\line.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\row.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\span.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\text.rs
+
+C:\Users\moham\Downloads\Projectss\WorkForce OS\openclaw-cli\target\debug\deps\libratatui_macros-7c985490b0dfb2a4.rmeta: C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\lib.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\layout.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\line.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\row.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\span.rs C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\text.rs
+
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\lib.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\layout.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\line.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\row.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\span.rs:
+C:\Users\moham\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\ratatui-macros-0.7.2\src\text.rs:
