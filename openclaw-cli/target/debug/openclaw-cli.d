@@ -1,1 +1,0 @@
-C:\Users\moham\Downloads\Projectss\WorkForce\ OS\openclaw-cli\target\debug\openclaw-cli.exe: C:\Users\moham\Downloads\Projectss\WorkForce\ OS\openclaw-cli\src\main.rs C:\Users\moham\Downloads\Projectss\WorkForce\ OS\openclaw-cli\src\mcp_client.rs C:\Users\moham\Downloads\Projectss\WorkForce\ OS\openclaw-cli\src\parser.rs
