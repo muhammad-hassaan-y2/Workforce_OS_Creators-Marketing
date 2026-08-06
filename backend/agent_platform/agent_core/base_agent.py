@@ -1,15 +1,14 @@
 """
 AWS Bedrock & Dynamic Neural LLM Agent Base Class
 ===================================================
-Executes 100% dynamic LLM agent reasoning turns via AWS Bedrock Models API (boto3 bedrock-runtime),
-OpenAI / Anthropic / Groq LLM APIs, or dynamic system prompt persona compilation.
+Executes 100% dynamic LLM agent reasoning turns via AWS Bedrock Models API (boto3 bedrock-runtime)
+or external LLM API. Returns exact LLM generated output or exact raw LLM API error if invocation fails.
 Zero static/hardcoded text strings.
 """
 import os
 import json
-import random
 import urllib.request
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -72,13 +71,14 @@ class Agent:
 
     async def think(self, user_input: str, extra_context: Optional[str] = None) -> str:
         """
-        Executes 100% dynamic LLM reasoning turn via AWS Bedrock SDK or dynamic neural engine.
+        Executes LLM reasoning turn via AWS Bedrock SDK or external LLM API.
+        Returns the exact LLM generated output or exact raw LLM API error if invocation fails.
         """
         system_prompt = self.personality_engine.build_system_prompt(
             self.role_description, self.goals, extra_context
         )
 
-        reply = ""
+        bedrock_errors = []
 
         # 1. Attempt Live AWS Bedrock Runtime Model Invocation
         if self.bedrock_client is not None:
@@ -119,6 +119,7 @@ class Agent:
                     )
 
                     response_body = json.loads(response.get("body").read())
+                    reply = ""
                     if "nova" in model_id:
                         output_msg = response_body.get("output", {}).get("message", {}).get("content", [])
                         if output_msg:
@@ -131,26 +132,41 @@ class Agent:
                             reply = content_blocks[0].get("text", "")
 
                     if reply:
-                        break
+                        self.history.append({"role": "user", "content": user_input})
+                        self.history.append({"role": "assistant", "content": reply})
+                        return reply
                 except Exception as err:
-                    print(f"[AWS Bedrock Model {model_id} Note]: {err}")
+                    err_str = str(err)
+                    bedrock_errors.append(f"{model_id}: {err_str}")
 
-        # 2. Attempt OpenAI / Groq / OpenRouter API if configured
-        if not reply:
-            reply = self._try_external_llm_api(system_prompt, user_input)
+        # 2. Attempt OpenAI / Groq / OpenRouter LLM API if configured
+        external_reply, ext_err = self._try_external_llm_api(system_prompt, user_input)
+        if external_reply:
+            self.history.append({"role": "user", "content": user_input})
+            self.history.append({"role": "assistant", "content": external_reply})
+            return external_reply
 
-        # 3. Dynamic Neural Persona Execution Engine (zero static text templates)
-        if not reply:
-            reply = self._dynamic_neural_persona_reply(system_prompt, user_input)
+        # 3. If LLM API invocation fails, return the EXACT REAL LLM API ERROR MESSAGE!
+        if bedrock_errors:
+            error_msg = f"❌ [AWS Bedrock Error]: {bedrock_errors[0]}"
+        elif ext_err:
+            error_msg = f"❌ [LLM API Error]: {ext_err}"
+        elif self.aws_access_key and self.aws_secret_key:
+            error_msg = "❌ [AWS Bedrock Error]: Boto3 bedrock-runtime client failed to invoke model."
+        else:
+            error_msg = "❌ [LLM Config Error]: AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY not configured in backend/.env."
 
         self.history.append({"role": "user", "content": user_input})
-        self.history.append({"role": "assistant", "content": reply})
-        return reply
+        self.history.append({"role": "assistant", "content": error_msg})
+        return error_msg
 
-    def _try_external_llm_api(self, system_prompt: str, user_input: str) -> str:
+    def _try_external_llm_api(self, system_prompt: str, user_input: str) -> Tuple[str, str]:
+        """
+        Calls external LLM API (Groq / OpenRouter / OpenAI) if key is present.
+        """
         api_key = os.getenv("OPENAI_API_KEY") or os.getenv("GROQ_API_KEY") or os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            return ""
+            return "", "No external LLM API key set"
 
         url = "https://api.openai.com/v1/chat/completions"
         if os.getenv("GROQ_API_KEY"):
@@ -183,54 +199,9 @@ class Agent:
             )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 res_json = json.loads(resp.read().decode("utf-8"))
-                return res_json["choices"][0]["message"]["content"]
+                return res_json["choices"][0]["message"]["content"], ""
         except Exception as e:
-            print(f"[LLM API Notice]: {e}")
-            return ""
-
-    def _dynamic_neural_persona_reply(self, system_prompt: str, user_input: str) -> str:
-        """
-        Dynamically synthesizes a context-aware LLM persona answer based on system prompt traits,
-        role goals, and exact user input keywords.
-        """
-        archetype = self.personality_engine.traits.archetype
-        style = self.personality_engine.traits.communication_style
-        assertiveness = self.personality_engine.traits.assertiveness
-        empathy = self.personality_engine.traits.empathy
-
-        clean_input = user_input.strip()
-        words = clean_input.split()
-
-        # Check for non-alphanumeric or gibberish input (e.g. "lkhjdsgflsakdjf", "dsfoj;hsd;")
-        alphanumeric_words = [w for w in words if any(c.isalnum() for c in w)]
-        if not alphanumeric_words or (len(clean_input) > 6 and len(alphanumeric_words) == 1 and not any(w.lower() in ["hello", "hi", "hey", "help", "pitch", "plan", "call", "demo", "price", "sla"] for w in alphanumeric_words)):
-            return (
-                f"[{self.name} // {archetype}]: I noticed your input ('{clean_input[:30]}') appears to be an unformatted or test string. "
-                f"As a specialized AI worker operating with style '{style}', I can execute B2B sales outreach, reframe buyer objections, "
-                f"verify brand guidelines, or run multi-agent task workflows. Please specify your target objective or instruction."
-            )
-
-        # Dynamic synthesis based on persona goals & communication style
-        intro = f"[{self.name} // {archetype}]: "
-        
-        if len(words) <= 2 and clean_input.lower() in ["hi", "hello", "hey", "greetings"]:
-            return (
-                f"{intro}Hello! I am active and ready to execute. "
-                f"Operating with {style}, I can handle direct outreach, objection resolution, or automated pipeline execution. What scenario are we running?"
-            )
-
-        # Dynamic reasoning synthesis for multi-word prompts
-        context_summary = " ".join(words[:6])
-        action_verbs = ["execute", "accelerate", "qualify", "coordinate", "optimize"]
-        chosen_verb = action_verbs[hash(clean_input) % len(action_verbs)]
-
-        return (
-            f"{intro}Analyzing instruction: '{clean_input}'. "
-            f"Based on my persona traits (Assertiveness: {assertiveness}, Empathy: {empathy}), "
-            f"I recommend we {chosen_verb} a structured strategy around '{context_summary}': "
-            f"1) Identify key stakeholder pain points, 2) Validate SLA & compliance boundaries, and 3) Automate direct calendar booking and CRM pipeline tracking. "
-            f"Shall I dispatch this task across our specialized agent workforce now?"
-        )
+            return "", str(e)
 
     def remember(self, key: str, value: Any, category: str = "general") -> None:
         self.memory.set(key, value, category)

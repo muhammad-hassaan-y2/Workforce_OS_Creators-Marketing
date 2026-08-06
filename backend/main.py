@@ -232,12 +232,13 @@ def send_message_and_run_agent(
     )
     db.add(assistant_chat_msg)
     thread.updated_at = datetime.utcnow()
-    db.commit()
+    user_msg_resp = schemas.ChatMessageResponse.model_validate(user_chat_msg).model_dump(mode="json")
+    assistant_msg_resp = schemas.ChatMessageResponse.model_validate(assistant_chat_msg).model_dump(mode="json")
 
     return {
         "status": "SUCCESS",
-        "user_message": user_chat_msg,
-        "assistant_message": assistant_chat_msg
+        "user_message": user_msg_resp,
+        "assistant_message": assistant_msg_resp
     }
 
 # ---- 100% Dynamic Agent Persona CRUD & LLM Concept Generation Endpoints ----

@@ -46,7 +46,7 @@ class ChatMessageResponse(BaseModel):
     text: str
     agent_widget: Optional[Any] = None
     timestamp: str
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
