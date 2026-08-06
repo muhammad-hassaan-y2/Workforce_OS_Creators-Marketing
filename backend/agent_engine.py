@@ -1,6 +1,7 @@
 import time
 import random
 import asyncio
+import concurrent.futures
 from typing import Dict, Any, Optional
 
 try:
@@ -10,6 +11,15 @@ try:
 except Exception as err:
     print(f"[AWS Bedrock Platform Notice]: {err}")
     BEDROCK_PLATFORM_AVAILABLE = False
+
+
+def run_async_coro(coro):
+    """
+    Safely executes an async coroutine from sync or async contexts without event loop conflicts.
+    """
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(asyncio.run, coro)
+        return future.result()
 
 
 class PythonAgentEngine:
@@ -39,13 +49,19 @@ class PythonAgentEngine:
         if platform:
             try:
                 if agent_type == "sales" or "pitch" in lower_prompt or "cloudsuite" in lower_prompt:
-                    bedrock_reply = asyncio.run(platform.sales.think(prompt))
+                    bedrock_reply = run_async_coro(platform.sales.think(prompt))
                 elif agent_type == "objection" or "objection" in lower_prompt or "discount" in lower_prompt:
-                    bedrock_reply = asyncio.run(platform.objection.think(prompt))
+                    bedrock_reply = run_async_coro(platform.objection.think(prompt))
                 elif agent_type == "brand" or "brand" in lower_prompt or "guideline" in lower_prompt:
-                    bedrock_reply = asyncio.run(platform.brand.think(prompt))
+                    bedrock_reply = run_async_coro(platform.brand.think(prompt))
+                elif agent_type == "planner" or "plan" in lower_prompt or "rollout" in lower_prompt:
+                    bedrock_reply = run_async_coro(platform.planner.think(prompt))
+                elif agent_type == "conflict" or "conflict" in lower_prompt or "audit" in lower_prompt:
+                    bedrock_reply = run_async_coro(platform.conflict.think(prompt))
+                elif agent_type == "creator" or "forge" in lower_prompt:
+                    bedrock_reply = run_async_coro(platform.creator.think(prompt))
                 else:
-                    bedrock_reply = asyncio.run(platform.sales.think(prompt))
+                    bedrock_reply = run_async_coro(platform.sales.think(prompt))
             except Exception as ex:
                 print(f"[Bedrock Agent Execution Note]: {ex}")
 
@@ -121,7 +137,7 @@ class PythonAgentEngine:
                 "type": "mesh",
                 "status": "SUCCESS",
                 "timestamp": timestamp,
-                "message": bedrock_reply or f"Hello! How can I assist you with your multi-agent execution workflow today?",
+                "message": bedrock_reply or f"Hello! I am online and actively listening. What workflow or deal scenario would you like to execute today?",
                 "data": {
                     "agents_coordinated": ["Jordan (Sales)", "ObjectionHandler", "Archive (Brand)", "Atlas (PM)", "Warden (Auditor)"],
                     "execution_time": "0.88s"
@@ -136,7 +152,7 @@ class PythonAgentEngine:
         platform = cls.get_platform()
         if platform:
             try:
-                return asyncio.run(platform.run_demo_workflow())
+                return run_async_coro(platform.run_demo_workflow())
             except Exception as err:
                 print(f"[Orchestration Execution Exception]: {err}")
         

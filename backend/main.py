@@ -268,17 +268,21 @@ def create_persona(persona_data: schemas.AgentPersonaCreate, db: Session = Depen
     return new_persona
 
 @app.post("/api/personas/generate")
-def generate_dynamic_persona_concept(request: schemas.ConceptGenerationRequest, db: Session = Depends(get_db)):
+async def generate_dynamic_persona_concept(request: schemas.ConceptGenerationRequest, db: Session = Depends(get_db)):
     """
     Dynamically generates a brand new Agent Persona (traits, communication style, values, guardrails)
     from a business brief using AgentCreator (Forge) LLM engine.
     """
     platform = PythonAgentEngine.get_platform()
+    persona_dict = {}
     if platform and hasattr(platform, "creator"):
-        import asyncio
-        concept = asyncio.run(platform.creator.generate_concept(request.brief))
-        persona_dict = concept.model_dump()
-    else:
+        try:
+            concept = await platform.creator.generate_concept(request.brief)
+            persona_dict = concept.model_dump()
+        except Exception as ex:
+            print(f"[Concept Generation Notice]: {ex}")
+
+    if not persona_dict:
         persona_dict = {
             "name": "Specialist Agent",
             "archetype": "Domain Specialist",
