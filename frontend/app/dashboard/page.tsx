@@ -118,6 +118,18 @@ export default function DashboardPage() {
   const [chatInput, setChatInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const rawUser = localStorage.getItem("kaiso_user");
+      if (rawUser) {
+        try {
+          setCurrentUser(JSON.parse(rawUser));
+        } catch {}
+      }
+    }
+  }, []);
 
   // Sidebar Threads (ChatGPT / Claude style)
   const [threads, setThreads] = useState([
@@ -392,18 +404,23 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Sidebar Footer */}
+        {/* Sidebar Footer — Unified User Profile & FastAPI/CLI Link */}
         <div className="pt-3 border-t border-[#22222E] flex items-center justify-between text-xs text-gray-400">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-yellow-400 flex items-center justify-center text-white font-bold text-xs shadow-md">
-              O
+          <div className="flex items-center gap-2 truncate">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-yellow-400 flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0">
+              {currentUser?.full_name ? currentUser.full_name.charAt(0).toUpperCase() : (currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : "O")}
             </div>
             <div className="truncate">
-              <div className="text-white font-semibold text-xs leading-none">Operator Pro</div>
-              <div className="text-[10px] font-mono text-purple-400 mt-0.5">Agency & Creator Plan</div>
+              <div className="text-white font-semibold text-xs leading-none truncate">
+                {currentUser?.full_name || currentUser?.email || "Operator Pro"}
+              </div>
+              <div className="text-[9px] font-mono text-purple-400 mt-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="uppercase font-bold">{currentUser?.role || "CREATOR"}</span> &bull; <span>FastAPI & CLI Linked</span>
+              </div>
             </div>
           </div>
-          <Settings className="w-4 h-4 hover:text-white cursor-pointer transition-colors" />
+          <Settings className="w-4 h-4 hover:text-white cursor-pointer transition-colors shrink-0" />
         </div>
 
       </aside>
