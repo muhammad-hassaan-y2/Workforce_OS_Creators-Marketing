@@ -1,8 +1,8 @@
 """
 AWS Bedrock & Dynamic Neural LLM Agent Base Class
 ===================================================
-Executes 100% dynamic LLM agent reasoning turns via AWS Bedrock Models API (boto3 bedrock-runtime)
-or external LLM API. Returns exact LLM generated output or exact raw LLM API error if invocation fails.
+Executes 100% dynamic LLM agent reasoning turns via AWS Bedrock Models API (boto3 bedrock-runtime),
+AWS Bedrock Bearer Token API, or external LLM API. Returns exact LLM generated output or exact raw LLM API error if invocation fails.
 Zero static/hardcoded text strings.
 """
 import os
@@ -17,7 +17,7 @@ from .personality import PersonalityEngine, PersonalityTraits
 from .communication import AgentMessage, MessageType, CommunicationBus
 from .memory import InMemoryStore
 
-DEFAULT_AWS_BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL_ID", "us.anthropic.claude-3-haiku-20240307-v1:0")
+DEFAULT_AWS_BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL_ID", "us.amazon.nova-micro-v1:0")
 DEFAULT_AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 
@@ -71,7 +71,7 @@ class Agent:
 
     async def think(self, user_input: str, extra_context: Optional[str] = None) -> str:
         """
-        Executes LLM reasoning turn via AWS Bedrock SDK or external LLM API.
+        Executes LLM reasoning turn via AWS Bedrock SDK, AWS Bedrock Bearer Token, or external LLM API.
         Returns the exact LLM generated output or exact raw LLM API error if invocation fails.
         """
         system_prompt = self.personality_engine.build_system_prompt(
@@ -80,15 +80,62 @@ class Agent:
 
         bedrock_errors = []
 
-        # 1. Attempt Live AWS Bedrock Runtime Model Invocation
+        # 1. Attempt AWS Bedrock Bearer Token API Invocation (Mantle / Bedrock API Key)
+        bedrock_api_key = os.getenv("AWS_BEDROCK_API_KEY")
+        if bedrock_api_key:
+            for model_id in [self.model, "us.amazon.nova-micro-v1:0", "us.amazon.nova-lite-v1:0", "us.anthropic.claude-3-haiku-20240307-v1:0"]:
+                try:
+                    ep = f"https://bedrock-runtime.{self.aws_region}.amazonaws.com/model/{model_id}/invoke"
+                    messages = self.history + [{"role": "user", "content": user_input}]
+                    if "nova" in model_id:
+                        payload = {
+                            "system": [{"text": system_prompt}],
+                            "messages": [{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages]
+                        }
+                    else:
+                        payload = {
+                            "anthropic_version": "bedrock-2023-05-31",
+                            "max_tokens": self.max_tokens,
+                            "system": system_prompt,
+                            "messages": messages
+                        }
+
+                    req = urllib.request.Request(
+                        ep,
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={
+                            "Authorization": f"Bearer {bedrock_api_key}",
+                            "Content-Type": "application/json"
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=12) as resp:
+                        res_body = json.loads(resp.read().decode("utf-8"))
+                        reply = ""
+                        if "nova" in model_id:
+                            output_msg = res_body.get("output", {}).get("message", {}).get("content", [])
+                            if output_msg:
+                                reply = output_msg[0].get("text", "")
+                        else:
+                            content_blocks = res_body.get("content", [])
+                            if content_blocks:
+                                reply = content_blocks[0].get("text", "")
+
+                        if reply:
+                            self.history.append({"role": "user", "content": user_input})
+                            self.history.append({"role": "assistant", "content": reply})
+                            return reply
+                except Exception as e:
+                    err_str = str(e)
+                    bedrock_errors.append(f"Bedrock Bearer ({model_id}): {err_str}")
+
+        # 2. Attempt Live AWS Bedrock Runtime Boto3 Client Invocation
         if self.bedrock_client is not None:
             candidate_models = [
                 self.model,
-                "us.anthropic.claude-3-haiku-20240307-v1:0",
-                "anthropic.claude-3-haiku-20240307-v1:0",
-                "anthropic.claude-3-sonnet-20240229-v1:0",
+                "us.amazon.nova-micro-v1:0",
                 "us.amazon.nova-lite-v1:0",
-                "meta.llama3-8b-instruct-v1:0"
+                "us.anthropic.claude-3-haiku-20240307-v1:0",
+                "anthropic.claude-3-haiku-20240307-v1:0"
             ]
             for model_id in candidate_models:
                 try:
@@ -137,24 +184,24 @@ class Agent:
                         return reply
                 except Exception as err:
                     err_str = str(err)
-                    bedrock_errors.append(f"{model_id}: {err_str}")
+                    bedrock_errors.append(f"Boto3 Bedrock ({model_id}): {err_str}")
 
-        # 2. Attempt OpenAI / Groq / OpenRouter LLM API if configured
+        # 3. Attempt OpenAI / Groq / OpenRouter LLM API if configured
         external_reply, ext_err = self._try_external_llm_api(system_prompt, user_input)
         if external_reply:
             self.history.append({"role": "user", "content": user_input})
             self.history.append({"role": "assistant", "content": external_reply})
             return external_reply
 
-        # 3. If LLM API invocation fails, return the EXACT REAL LLM API ERROR MESSAGE!
+        # 4. If LLM API invocation fails, return the EXACT REAL LLM API ERROR MESSAGE!
         if bedrock_errors:
-            error_msg = f"❌ [AWS Bedrock Error]: {bedrock_errors[0]}"
+            error_msg = f"❌ [AWS Bedrock API Error]: {bedrock_errors[0]}"
         elif ext_err:
             error_msg = f"❌ [LLM API Error]: {ext_err}"
         elif self.aws_access_key and self.aws_secret_key:
             error_msg = "❌ [AWS Bedrock Error]: Boto3 bedrock-runtime client failed to invoke model."
         else:
-            error_msg = "❌ [LLM Config Error]: AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY not configured in backend/.env."
+            error_msg = "❌ [LLM Config Error]: AWS credentials not configured in backend/.env."
 
         self.history.append({"role": "user", "content": user_input})
         self.history.append({"role": "assistant", "content": error_msg})
