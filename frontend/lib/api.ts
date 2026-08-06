@@ -114,6 +114,15 @@ export async function fetchThreadMessages(threadId: string): Promise<ChatMessage
   return res.json();
 }
 
+export async function deleteThread(threadId: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/threads/${threadId}`, {
+    method: "DELETE",
+    headers: { ...getAuthHeader() }
+  });
+  if (!res.ok) throw new Error("Failed to delete thread");
+  return res.json();
+}
+
 export async function postChatMessage(threadId: string, text: string, agentId: string = "mesh"): Promise<any> {
   const res = await fetch(`${API_BASE_URL}/threads/${threadId}/messages`, {
     method: "POST",

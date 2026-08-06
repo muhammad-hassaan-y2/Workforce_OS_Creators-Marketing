@@ -12,7 +12,8 @@ import {
   fetchThreads, 
   createThread, 
   fetchThreadMessages, 
-  postChatMessage 
+  postChatMessage,
+  deleteThread
 } from "@/lib/api";
 import { 
   Bot, 
@@ -49,7 +50,10 @@ import {
   MicOff,
   BarChart3,
   ArrowRight,
-  Radio
+  Radio,
+  Trash2,
+  EyeOff,
+  ShieldAlert
 } from "lucide-react";
 
 interface AgentModel {
@@ -248,6 +252,8 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  const [isIncognito, setIsIncognito] = useState<boolean>(false);
+
   const [threads, setThreads] = useState<Array<{ id: string; title: string; time: string }>>([
     { id: "thread-1", title: "AWS Bedrock 6-Agent Session", time: "Just now" }
   ]);
@@ -255,6 +261,26 @@ export default function DashboardPage() {
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({
     "thread-1": []
   });
+
+  const handleDeleteThread = async (threadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteThread(threadId);
+      const updated = threads.filter(t => t.id !== threadId);
+      setThreads(updated);
+      if (activeThreadId === threadId) {
+        setActiveThreadId(updated.length > 0 ? updated[0].id : "");
+      }
+    } catch (err) {
+      console.error("Delete thread failed:", err);
+      // Fallback local delete
+      const updated = threads.filter(t => t.id !== threadId);
+      setThreads(updated);
+      if (activeThreadId === threadId) {
+        setActiveThreadId(updated.length > 0 ? updated[0].id : "");
+      }
+    }
+  };
 
   // 1. Fetch User Session Threads from Neon PostgreSQL DB on Mount
   useEffect(() => {
@@ -515,23 +541,31 @@ export default function DashboardPage() {
               {threads.map(t => {
                 const isActive = t.id === activeThreadId;
                 return (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setActiveThreadId(t.id);
-                      setActiveTab("chat");
-                    }}
-                    className={`w-full text-left py-2 px-3 rounded-lg text-xs transition-all flex items-center justify-between group ${
-                      isActive 
-                        ? "bg-[#231D4A] text-white font-semibold border border-amber-500/40 shadow-md" 
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-amber-400" : "text-gray-500"}`} />
-                      <span className="truncate">{t.title}</span>
-                    </span>
-                  </button>
+                  <div key={t.id} className="relative group flex items-center">
+                    <button
+                      onClick={() => {
+                        setActiveThreadId(t.id);
+                        setActiveTab("chat");
+                      }}
+                      className={`w-full text-left py-2 px-3 rounded-lg text-xs transition-all flex items-center justify-between ${
+                        isActive 
+                          ? "bg-[#231D4A] text-white font-semibold border border-amber-500/40 shadow-md" 
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 truncate pr-6">
+                        <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-amber-400" : "text-gray-500"}`} />
+                        <span className="truncate">{t.title}</span>
+                      </span>
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteThread(t.id, e)}
+                      className="absolute right-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-all shrink-0 z-10"
+                      title="Delete Chat Session"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -629,6 +663,19 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-3">
             <button
+              onClick={() => setIsIncognito(!isIncognito)}
+              className={`py-1.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-md ${
+                isIncognito
+                  ? "bg-purple-500/20 border-purple-500/60 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.3)] animate-pulse"
+                  : "bg-white/5 border-[#302859] text-gray-400 hover:text-white"
+              }`}
+              title="Private Incognito Mode (Messages won't be saved to DB)"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-purple-400" />
+              <span>{isIncognito ? "Incognito Active" : "Private Mode"}</span>
+            </button>
+
+            <button
               onClick={() => setIsCallActive(true)}
               className="py-1.5 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 shadow-md"
             >
@@ -644,6 +691,15 @@ export default function DashboardPage() {
           /* CONVERSATIONAL CHAT VIEW */
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-4xl w-full mx-auto scrollbar-none flex flex-col justify-between">
             <div className="space-y-6 flex-1">
+              
+              {/* Incognito Mode Banner */}
+              {isIncognito && (
+                <div className="py-2.5 px-4 rounded-xl bg-purple-500/10 border border-purple-500/40 text-purple-300 text-xs font-mono text-center flex items-center justify-center gap-2 shadow-lg">
+                  <ShieldAlert className="w-4 h-4 text-purple-400 animate-pulse" />
+                  <span>🕵️ Private Incognito Mode Active — Messages are transient and not saved to DB</span>
+                </div>
+              )}
+
               {currentMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center py-20 space-y-4">
                   <div className={`p-4 rounded-2xl ${activeAgent.color} shadow-2xl animate-pulse`}>
@@ -661,8 +717,8 @@ export default function DashboardPage() {
                     className={`flex gap-3 sm:gap-4 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {msg.sender === "assistant" && (
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-black font-extrabold text-xs shrink-0 shadow-lg mt-0.5">
-                        K
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-black font-extrabold text-xs shrink-0 shadow-lg mt-0.5" title="Kaiso AI Agent">
+                        <Sparkles className="w-4.5 h-4.5 text-black fill-black" />
                       </div>
                     )}
 
@@ -676,30 +732,7 @@ export default function DashboardPage() {
                         <p className="whitespace-pre-wrap">{msg.text}</p>
                       </div>
 
-                      {msg.agentWidget && (
-                        <div className="rounded-xl bg-[#110E26] border border-amber-500/30 p-3.5 space-y-2 text-xs shadow-xl animate-in fade-in duration-300">
-                          <div className="flex items-center justify-between border-b border-[#231F42] pb-2">
-                            <span className="font-mono text-amber-400 font-bold text-[11px] flex items-center gap-1.5">
-                              <Terminal className="w-3.5 h-3.5 text-amber-400" />
-                              {msg.agentWidget.title}
-                            </span>
-                            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">
-                              SUCCESS
-                            </span>
-                          </div>
-                          
-                          <div className="space-y-1.5 text-gray-300 font-mono text-[11px]">
-                            {Object.entries(msg.agentWidget.details).map(([key, val]) => (
-                              <div key={key} className="flex items-start gap-2">
-                                <span className="text-gray-500 uppercase text-[9px] font-bold w-32 shrink-0 pt-0.5">{key}:</span>
-                                <span className="text-amber-200 break-words flex-1">
-                                  {typeof val === "object" ? JSON.stringify(val, null, 2) : String(val)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+
 
                       <div className="flex items-center gap-2 text-[10px] text-gray-500 px-1">
                         <span>{msg.timestamp}</span>
@@ -844,21 +877,30 @@ export default function DashboardPage() {
               </div>
 
               {/* Input Form Box */}
-              <form onSubmit={handleSendMessage} className="relative flex items-center">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={activeAgent.placeholder}
-                  className="w-full py-3.5 pl-4 pr-12 rounded-2xl bg-[#161233] border border-[#302859] text-white text-xs sm:text-sm placeholder-gray-500 focus:outline-none focus:border-amber-500/60 transition-all shadow-inner"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim() || isGenerating}
-                  className="absolute right-2.5 p-2 rounded-xl bg-gradient-to-r from-amber-500 to-red-500 text-black hover:brightness-110 transition-all disabled:opacity-40 disabled:hover:brightness-100 shadow-md"
-                >
-                  <Send className="w-4 h-4 fill-black" />
-                </button>
+              <form onSubmit={handleSendMessage} className="relative flex items-end gap-2">
+                <div className="relative flex-1">
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    rows={1}
+                    placeholder={`Ask ${activeAgent.name} to pitch product, handle objections, or automate workflows... (Shift + Enter for new line)`}
+                    className="w-full py-3.5 pl-4 pr-12 rounded-2xl bg-[#161233] border border-[#302859] text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:border-amber-500/60 transition-all shadow-inner resize-none min-h-[48px] max-h-36 scrollbar-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim() || isGenerating}
+                    className="absolute right-3 bottom-3.5 p-2 rounded-xl bg-gradient-to-r from-amber-500 to-red-500 text-black hover:brightness-110 transition-all disabled:opacity-40 disabled:hover:brightness-100 shadow-md"
+                    title="Send message (Enter)"
+                  >
+                    <Send className="w-4 h-4 fill-black text-black" />
+                  </button>
+                </div>
               </form>
             </div>
           </footer>

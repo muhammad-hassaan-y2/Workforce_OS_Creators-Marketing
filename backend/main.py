@@ -176,6 +176,15 @@ def get_thread_messages(thread_id: str, db: Session = Depends(get_db)):
     msgs = db.query(models.ChatMessage).filter(models.ChatMessage.thread_id == thread_id).order_by(models.ChatMessage.created_at.asc()).all()
     return msgs
 
+@app.delete("/api/threads/{thread_id}")
+def delete_thread(thread_id: str, db: Session = Depends(get_db)):
+    db.query(models.ChatMessage).filter(models.ChatMessage.thread_id == thread_id).delete()
+    thread = db.query(models.Thread).filter(models.Thread.id == thread_id).first()
+    if thread:
+        db.delete(thread)
+    db.commit()
+    return {"status": "SUCCESS", "message": f"Thread '{thread_id}' deleted successfully."}
+
 @app.post("/api/threads/{thread_id}/messages")
 def send_message_and_run_agent(
     thread_id: str,
@@ -227,7 +236,7 @@ def send_message_and_run_agent(
         sender="assistant",
         agent_id=msg_data.agent_id or "mesh",
         text=assistant_text,
-        agent_widget=assistant_widget,
+        agent_widget=None,
         timestamp=now_str
     )
     db.add(assistant_chat_msg)
