@@ -319,33 +319,87 @@ export default function DashboardPage() {
     setChatInput("");
     setIsGenerating(true);
 
+    let targetThreadId = activeThreadId;
+
+    // Auto-create thread if none is active
+    if (!targetThreadId) {
+      try {
+        const newThread = await createThread(userText.slice(0, 30), activeAgent.id);
+        targetThreadId = newThread.id;
+        setActiveThreadId(targetThreadId);
+        setThreads(prev => [{ id: newThread.id, title: newThread.title, time: "Just now" }, ...prev]);
+      } catch (err) {
+        console.error("Auto thread creation failed:", err);
+        targetThreadId = `thread-${Date.now()}`;
+        setActiveThreadId(targetThreadId);
+      }
+    }
+
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Optimistically add User Message
+    const tempUserMsg: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      sender: "user",
+      text: userText,
+      agentId: activeAgent.id,
+      timestamp: nowStr
+    };
+
+    setMessages(prev => ({
+      ...prev,
+      [targetThreadId]: [...(prev[targetThreadId] || []), tempUserMsg]
+    }));
+
     try {
-      await postChatMessage(activeThreadId, userText, activeAgent.id);
+      const resp = await postChatMessage(targetThreadId, userText, activeAgent.id);
       
-      const dbMsgs = await fetchThreadMessages(activeThreadId);
-      if (dbMsgs) {
-        const formatted: ChatMessage[] = dbMsgs.map(m => ({
-          id: m.id,
-          sender: m.sender as "user" | "assistant",
-          text: m.text,
-          agentId: m.agent_id,
-          agentWidget: m.agent_widget,
-          timestamp: m.timestamp
+      if (resp && resp.user_message && resp.assistant_message) {
+        const userMsg: ChatMessage = {
+          id: resp.user_message.id,
+          sender: "user",
+          text: resp.user_message.text,
+          agentId: resp.user_message.agent_id,
+          timestamp: resp.user_message.timestamp
+        };
+        const assistantMsg: ChatMessage = {
+          id: resp.assistant_message.id,
+          sender: "assistant",
+          text: resp.assistant_message.text,
+          agentId: resp.assistant_message.agent_id,
+          agentWidget: resp.assistant_message.agent_widget,
+          timestamp: resp.assistant_message.timestamp
+        };
+
+        setMessages(prev => ({
+          ...prev,
+          [targetThreadId]: [...(prev[targetThreadId] || []).filter(m => !m.id.startsWith("temp-")), userMsg, assistantMsg]
         }));
-        setMessages(prev => ({ ...prev, [activeThreadId]: formatted }));
+      } else {
+        const dbMsgs = await fetchThreadMessages(targetThreadId);
+        if (dbMsgs && dbMsgs.length > 0) {
+          const formatted: ChatMessage[] = dbMsgs.map(m => ({
+            id: m.id,
+            sender: m.sender as "user" | "assistant",
+            text: m.text,
+            agentId: m.agent_id,
+            agentWidget: m.agent_widget,
+            timestamp: m.timestamp
+          }));
+          setMessages(prev => ({ ...prev, [targetThreadId]: formatted }));
+        }
       }
     } catch (err) {
       console.error(err);
-      // Fallback local display
-      const fallbackMsg: ChatMessage = {
-        id: Date.now().toString(),
-        sender: "user",
-        text: userText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      const errorMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        sender: "assistant",
+        text: "❌ Unable to connect to LLM agent server. Please make sure FastAPI backend on http://localhost:8000 is running.",
+        timestamp: nowStr
       };
       setMessages(prev => ({
         ...prev,
-        [activeThreadId]: [...(prev[activeThreadId] || []), fallbackMsg]
+        [targetThreadId]: [...(prev[targetThreadId] || []), errorMsg]
       }));
     } finally {
       setIsGenerating(false);
