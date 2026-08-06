@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: "Kaiso — AI Agent Operating System for Sales, Marketing & Content Creators",
   description: "Deploy autonomous AI agents that place calls, operate browsers, render 4K video shorts, and run backend CLI workflows — synchronized as one multi-agent workforce.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/logo-mark.svg",
+    icon: "/logo-mark.png",
+    shortcut: "/logo-mark.png",
+    apple: "/logo-mark.png",
   },
 };
 
