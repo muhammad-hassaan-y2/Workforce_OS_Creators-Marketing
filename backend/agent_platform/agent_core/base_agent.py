@@ -1,8 +1,9 @@
 """
-AWS Bedrock & Dynamic Neural LLM Agent Base Class
-===================================================
-Executes 100% dynamic LLM agent reasoning turns via AWS Bedrock Models API (boto3 bedrock-runtime),
-AWS Bedrock Bearer Token API, or external LLM API. Returns exact LLM generated output or exact raw LLM API error if invocation fails.
+AWS Bedrock & Google Gemini Dynamic LLM Agent Base Class
+==========================================================
+Executes 100% dynamic LLM agent reasoning turns via Google Gemini API (gemini-flash-latest),
+AWS Bedrock Models API (boto3 bedrock-runtime / Bearer Token), or external LLM API.
+Returns exact LLM generated output or exact raw LLM API error if invocation fails.
 Zero static/hardcoded text strings.
 """
 import os
@@ -23,7 +24,7 @@ DEFAULT_AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 class Agent:
     """
-    AWS Bedrock & Neural LLM Autonomous AI Agent
+    AWS Bedrock & Google Gemini Autonomous AI Agent
     Subclassed by SalesAgent, ObjectionHandlingAgent, BrandMemoryAgent, PmAgencyAgents.
     """
     def __init__(
@@ -71,34 +72,35 @@ class Agent:
 
     async def think(self, user_input: str, extra_context: Optional[str] = None) -> str:
         """
-        Executes LLM reasoning turn via AWS Bedrock SDK, AWS Bedrock Bearer Token, or external LLM API.
+        Executes LLM reasoning turn via Google Gemini API, AWS Bedrock SDK, or Bearer Token API.
         Returns the exact LLM generated output or exact raw LLM API error if invocation fails.
         """
         system_prompt = self.personality_engine.build_system_prompt(
             self.role_description, self.goals, extra_context
         )
 
-        bedrock_errors = []
+        llm_errors = []
 
-        # 1. Attempt AWS Bedrock Bearer Token API Invocation (Mantle / Bedrock API Key)
+        # 1. Attempt Live Google Gemini LLM API Invocation
+        gemini_reply, gemini_err = self._try_gemini_llm_api(system_prompt, user_input)
+        if gemini_reply:
+            self.history.append({"role": "user", "content": user_input})
+            self.history.append({"role": "assistant", "content": gemini_reply})
+            return gemini_reply
+        elif gemini_err:
+            llm_errors.append(f"Gemini API: {gemini_err}")
+
+        # 2. Attempt AWS Bedrock Bearer Token API Invocation (Mantle / Bedrock API Key)
         bedrock_api_key = os.getenv("AWS_BEDROCK_API_KEY")
         if bedrock_api_key:
-            for model_id in [self.model, "us.amazon.nova-micro-v1:0", "us.amazon.nova-lite-v1:0", "us.anthropic.claude-3-haiku-20240307-v1:0"]:
+            for model_id in [self.model, "us.amazon.nova-micro-v1:0", "us.amazon.nova-lite-v1:0"]:
                 try:
                     ep = f"https://bedrock-runtime.{self.aws_region}.amazonaws.com/model/{model_id}/invoke"
                     messages = self.history + [{"role": "user", "content": user_input}]
-                    if "nova" in model_id:
-                        payload = {
-                            "system": [{"text": system_prompt}],
-                            "messages": [{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages]
-                        }
-                    else:
-                        payload = {
-                            "anthropic_version": "bedrock-2023-05-31",
-                            "max_tokens": self.max_tokens,
-                            "system": system_prompt,
-                            "messages": messages
-                        }
+                    payload = {
+                        "system": [{"text": system_prompt}],
+                        "messages": [{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages]
+                    }
 
                     req = urllib.request.Request(
                         ep,
@@ -111,52 +113,27 @@ class Agent:
                     with urllib.request.urlopen(req, timeout=12) as resp:
                         res_body = json.loads(resp.read().decode("utf-8"))
                         reply = ""
-                        if "nova" in model_id:
-                            output_msg = res_body.get("output", {}).get("message", {}).get("content", [])
-                            if output_msg:
-                                reply = output_msg[0].get("text", "")
-                        else:
-                            content_blocks = res_body.get("content", [])
-                            if content_blocks:
-                                reply = content_blocks[0].get("text", "")
+                        output_msg = res_body.get("output", {}).get("message", {}).get("content", [])
+                        if output_msg:
+                            reply = output_msg[0].get("text", "")
 
                         if reply:
                             self.history.append({"role": "user", "content": user_input})
                             self.history.append({"role": "assistant", "content": reply})
                             return reply
                 except Exception as e:
-                    err_str = str(e)
-                    bedrock_errors.append(f"Bedrock Bearer ({model_id}): {err_str}")
+                    llm_errors.append(f"Bedrock Bearer ({model_id}): {e}")
 
-        # 2. Attempt Live AWS Bedrock Runtime Boto3 Client Invocation
+        # 3. Attempt Live AWS Bedrock Runtime Boto3 Client Invocation
         if self.bedrock_client is not None:
-            candidate_models = [
-                self.model,
-                "us.amazon.nova-micro-v1:0",
-                "us.amazon.nova-lite-v1:0",
-                "us.anthropic.claude-3-haiku-20240307-v1:0",
-                "anthropic.claude-3-haiku-20240307-v1:0"
-            ]
+            candidate_models = [self.model, "us.amazon.nova-micro-v1:0"]
             for model_id in candidate_models:
                 try:
                     messages = self.history + [{"role": "user", "content": user_input}]
-                    if "nova" in model_id:
-                        payload = {
-                            "system": [{"text": system_prompt}],
-                            "messages": [{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages]
-                        }
-                    elif "llama" in model_id:
-                        payload = {
-                            "prompt": f"<|system|>\n{system_prompt}\n<|user|>\n{user_input}\n<|assistant|>",
-                            "max_gen_len": self.max_tokens
-                        }
-                    else:
-                        payload = {
-                            "anthropic_version": "bedrock-2023-05-31",
-                            "max_tokens": self.max_tokens,
-                            "system": system_prompt,
-                            "messages": messages
-                        }
+                    payload = {
+                        "system": [{"text": system_prompt}],
+                        "messages": [{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages]
+                    }
 
                     response = self.bedrock_client.invoke_model(
                         modelId=model_id,
@@ -167,45 +144,68 @@ class Agent:
 
                     response_body = json.loads(response.get("body").read())
                     reply = ""
-                    if "nova" in model_id:
-                        output_msg = response_body.get("output", {}).get("message", {}).get("content", [])
-                        if output_msg:
-                            reply = output_msg[0].get("text", "")
-                    elif "llama" in model_id:
-                        reply = response_body.get("generation", "")
-                    else:
-                        content_blocks = response_body.get("content", [])
-                        if content_blocks:
-                            reply = content_blocks[0].get("text", "")
+                    output_msg = response_body.get("output", {}).get("message", {}).get("content", [])
+                    if output_msg:
+                        reply = output_msg[0].get("text", "")
 
                     if reply:
                         self.history.append({"role": "user", "content": user_input})
                         self.history.append({"role": "assistant", "content": reply})
                         return reply
                 except Exception as err:
-                    err_str = str(err)
-                    bedrock_errors.append(f"Boto3 Bedrock ({model_id}): {err_str}")
+                    llm_errors.append(f"Boto3 Bedrock ({model_id}): {err}")
 
-        # 3. Attempt OpenAI / Groq / OpenRouter LLM API if configured
+        # 4. Attempt External OpenAI / Groq API if configured
         external_reply, ext_err = self._try_external_llm_api(system_prompt, user_input)
         if external_reply:
             self.history.append({"role": "user", "content": user_input})
             self.history.append({"role": "assistant", "content": external_reply})
             return external_reply
 
-        # 4. If LLM API invocation fails, return the EXACT REAL LLM API ERROR MESSAGE!
-        if bedrock_errors:
-            error_msg = f"❌ [AWS Bedrock API Error]: {bedrock_errors[0]}"
-        elif ext_err:
-            error_msg = f"❌ [LLM API Error]: {ext_err}"
-        elif self.aws_access_key and self.aws_secret_key:
-            error_msg = "❌ [AWS Bedrock Error]: Boto3 bedrock-runtime client failed to invoke model."
-        else:
-            error_msg = "❌ [LLM Config Error]: AWS credentials not configured in backend/.env."
-
+        # 5. If all LLM APIs fail, return raw LLM error message
+        error_msg = f"❌ [LLM API Invocation Error]: {llm_errors[0] if llm_errors else 'No API keys configured'}"
         self.history.append({"role": "user", "content": user_input})
         self.history.append({"role": "assistant", "content": error_msg})
         return error_msg
+
+    def _try_gemini_llm_api(self, system_prompt: str, user_input: str) -> Tuple[str, str]:
+        """
+        Invokes Google Gemini API with system prompt persona and user input.
+        """
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        if not gemini_key:
+            return "", "No GEMINI_API_KEY set in backend/.env"
+
+        models = ["models/gemini-flash-latest", "models/gemini-2.5-flash", "models/gemini-pro-latest"]
+        for m in models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/{m}:generateContent?key={gemini_key}"
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": f"System Persona & Instructions:\n{system_prompt}\n\nUser Instruction:\n{user_input}"}
+                        ]
+                    }
+                ]
+            }
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                    candidates = res_json.get("candidates", [])
+                    if candidates and len(candidates) > 0:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts and len(parts) > 0:
+                            return parts[0].get("text", ""), ""
+            except Exception as e:
+                print(f"[Gemini Model {m} Notice]: {e}")
+                continue
+
+        return "", "Google Gemini API rate limit or model error"
 
     def _try_external_llm_api(self, system_prompt: str, user_input: str) -> Tuple[str, str]:
         """
