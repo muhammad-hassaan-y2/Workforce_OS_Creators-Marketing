@@ -7,6 +7,9 @@ personality system prompt compiling, memory storage, and communication bus routi
 import os
 import json
 from typing import Any, Dict, List, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from .personality import PersonalityEngine, PersonalityTraits
 from .communication import AgentMessage, MessageType, CommunicationBus
