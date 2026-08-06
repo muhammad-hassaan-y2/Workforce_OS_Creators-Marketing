@@ -34,28 +34,30 @@ class PythonAgentEngine:
         lower_prompt = prompt.lower()
         platform = cls.get_platform()
 
-        # Execute specialized Bedrock agents if platform is available
-        bedrock_thought = None
+        # 1. Execute LLM Reasoning turn across platform agents
+        bedrock_reply = None
         if platform:
             try:
-                if "sales" in lower_prompt or "pitch" in lower_prompt:
-                    bedrock_thought = asyncio.run(platform.sales.pitch("Kaiso Agent OS", prompt))
-                elif "objection" in lower_prompt or "discount" in lower_prompt:
-                    bedrock_thought = asyncio.run(platform.objection.handle_objection(prompt))
-                elif "brand" in lower_prompt or "guideline" in lower_prompt:
-                    bedrock_thought = asyncio.run(platform.brand.check_consistency(prompt))
+                if agent_type == "sales" or "pitch" in lower_prompt or "cloudsuite" in lower_prompt:
+                    bedrock_reply = asyncio.run(platform.sales.think(prompt))
+                elif agent_type == "objection" or "objection" in lower_prompt or "discount" in lower_prompt:
+                    bedrock_reply = asyncio.run(platform.objection.think(prompt))
+                elif agent_type == "brand" or "brand" in lower_prompt or "guideline" in lower_prompt:
+                    bedrock_reply = asyncio.run(platform.brand.think(prompt))
+                else:
+                    bedrock_reply = asyncio.run(platform.sales.think(prompt))
             except Exception as ex:
                 print(f"[Bedrock Agent Execution Note]: {ex}")
 
-        # 1. Phone Caller Agent
-        if "call" in lower_prompt or "phone" in lower_prompt or agent_type == "phone":
+        # 2. Dispatch response based on selected Agent Worker Type
+        if agent_type == "phone" or "call" in lower_prompt or "phone" in lower_prompt:
             return {
                 "agent": "Phone Caller Agent (AWS Bedrock)",
                 "type": "phone",
                 "status": "SUCCESS",
                 "latency_ms": random.randint(280, 310),
                 "timestamp": timestamp,
-                "message": bedrock_thought or f"Phone Agent initiated sub-310ms call for: '{prompt}'",
+                "message": bedrock_reply or f"Phone Agent initiated sub-310ms call for: '{prompt}'",
                 "data": {
                     "lead": "Sarah Jenkins (VP Sales)",
                     "duration": "02:14",
@@ -68,31 +70,29 @@ class PythonAgentEngine:
                 }
             }
 
-        # 2. AI Video Creation Agent
-        elif "video" in lower_prompt or "render" in lower_prompt or agent_type == "video":
+        elif agent_type == "video" or "video" in lower_prompt or "render" in lower_prompt:
             return {
                 "agent": "AI Video Creation Agent (AWS Bedrock)",
                 "type": "video",
                 "status": "SUCCESS",
                 "progress": 100,
                 "timestamp": timestamp,
-                "message": f"Rendered 4K MP4 video asset for prompt: '{prompt}'",
+                "message": bedrock_reply or f"Rendered 4K MP4 video asset for: '{prompt}'",
                 "data": {
                     "resolution": "4K UHD (3840x2160)",
                     "fps": 60,
                     "target_platforms": ["YouTube Shorts", "Instagram Reels", "TikTok"],
-                    "script": bedrock_thought or f"Generated AI video script for prompt: '{prompt}'"
+                    "script": bedrock_reply or f"Generated AI video script for: '{prompt}'"
                 }
             }
 
-        # 3. Browser Control Agent
-        elif "scrape" in lower_prompt or "browser" in lower_prompt or agent_type == "browser":
+        elif agent_type == "browser" or "scrape" in lower_prompt or "browser" in lower_prompt:
             return {
                 "agent": "Browser Control Agent (AWS Bedrock)",
                 "type": "browser",
                 "status": "SUCCESS",
                 "timestamp": timestamp,
-                "message": f"Browser Agent navigated target DOM & auto-submitted forms for: '{prompt}'",
+                "message": bedrock_reply or f"Browser Agent navigated target DOM & auto-submitted forms for: '{prompt}'",
                 "data": {
                     "url": "https://linkedin.com/sales/search/people",
                     "prospects_scraped": 50,
@@ -101,14 +101,13 @@ class PythonAgentEngine:
                 }
             }
 
-        # 4. CLI / Ops Agent
-        elif "cli" in lower_prompt or "bash" in lower_prompt or agent_type == "cli":
+        elif agent_type == "cli" or "cli" in lower_prompt or "bash" in lower_prompt:
             return {
                 "agent": "CLI / Ops Agent (AWS Bedrock)",
                 "type": "cli",
                 "status": "SUCCESS",
                 "timestamp": timestamp,
-                "message": f"CLI Ops Agent executed terminal automation pipeline for: '{prompt}'",
+                "message": bedrock_reply or f"CLI Ops Agent executed terminal automation pipeline for: '{prompt}'",
                 "data": {
                     "command": f"kaiso exec --task '{prompt}'",
                     "crm_sync": "142 records synced to HubSpot CRM",
@@ -116,14 +115,13 @@ class PythonAgentEngine:
                 }
             }
 
-        # 5. Multi-Agent Orchestration Mesh
         else:
             return {
-                "agent": "Kaiso-4o Multi-Agent Mesh (AWS Bedrock)",
+                "agent": "Kaiso Multi-Agent Mesh (AWS Bedrock)",
                 "type": "mesh",
                 "status": "SUCCESS",
                 "timestamp": timestamp,
-                "message": bedrock_thought or f"AWS Bedrock Multi-Agent Mesh executed parallel workflow for: '{prompt}'",
+                "message": bedrock_reply or f"Hello! How can I assist you with your multi-agent execution workflow today?",
                 "data": {
                     "agents_coordinated": ["Jordan (Sales)", "ObjectionHandler", "Archive (Brand)", "Atlas (PM)", "Warden (Auditor)"],
                     "execution_time": "0.88s"
