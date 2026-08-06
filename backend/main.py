@@ -14,8 +14,8 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Kaiso Agent OS API",
-    description="Real-time FastAPI Backend with Neon PostgreSQL & Python Agent Workers Engine",
-    version="2.4.0"
+    description="Real-time FastAPI Backend with Neon PostgreSQL, AWS Bedrock Models SDK & Multi-Agent Personality Engine",
+    version="2.5.0"
 )
 
 # Enable CORS for Next.js Frontend & CLI
@@ -46,13 +46,14 @@ def read_root():
     return {
         "status": "online",
         "service": "Kaiso AI Agent OS Backend",
+        "engine": "AWS Bedrock Boto3 SDK & Multi-Agent Mesh",
         "database": "Neon PostgreSQL Connected",
         "docs": "/docs"
     }
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "healthy", "agents_online": 4}
+    return {"status": "healthy", "agents_online": 6, "aws_bedrock_ready": True}
 
 @app.post("/api/auth/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
 def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -135,10 +136,26 @@ def run_agent_task(request: AgentRunRequest):
 def list_active_agents():
     return {
         "status": "online",
+        "engine": "AWS Bedrock Boto3 SDK",
         "agents": [
-            {"id": "phone", "name": "Phone Caller Agent", "status": "active", "latency": "<310ms"},
-            {"id": "video", "name": "AI Video Creation Agent", "status": "active", "resolution": "4K MP4"},
-            {"id": "browser", "name": "Browser Control Agent", "status": "active", "type": "DOM Auto-Scraper"},
-            {"id": "cli", "name": "CLI / Ops Agent", "status": "active", "runtime": "Headless Bash/Python"}
+            {"id": "jordan", "name": "Jordan (Sales Agent)", "archetype": "The Closer", "latency": "<310ms"},
+            {"id": "objection", "name": "ObjectionHandler", "archetype": "The Diplomat", "type": "Objection Handler"},
+            {"id": "archive", "name": "Archive (Brand Guardian)", "archetype": "Institutional Memory", "type": "Brand Memory"},
+            {"id": "forge", "name": "Forge (Agent Creator)", "archetype": "The Casting Director", "type": "Persona Engine"},
+            {"id": "atlas", "name": "Atlas (PM Planner)", "archetype": "The Strategist", "type": "Task Planning"},
+            {"id": "warden", "name": "Warden (PM Auditor)", "archetype": "The Auditor", "type": "Conflict Scanner"}
         ]
+    }
+
+@app.post("/api/bedrock/orchestrate")
+def trigger_full_orchestration():
+    """
+    Triggers end-to-end multi-agent orchestration across AWS Bedrock agents:
+    Seed brand memory -> generate concept -> sales pitch -> objection handling -> brand consistency check -> PM plan -> PM conflict scan.
+    """
+    result = PythonAgentEngine.run_full_orchestration()
+    return {
+        "status": "SUCCESS",
+        "engine": "AWS Bedrock Multi-Agent Orchestrator",
+        "workflow": result
     }
