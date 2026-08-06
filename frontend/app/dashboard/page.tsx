@@ -5,6 +5,7 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Spinner, Runner, PulseDot } from "@/components/ui/Spinner";
+import { runAgentTask, runBedrockOrchestration } from "@/lib/api";
 import { 
   Bot, 
   User, 
@@ -31,11 +32,14 @@ import {
   Check,
   Copy,
   Layers,
-  Cpu
+  Cpu,
+  ShieldCheck,
+  Briefcase,
+  AlertTriangle
 } from "lucide-react";
 
 interface AgentModel {
-  id: "mesh" | "phone" | "video" | "browser" | "cli";
+  id: "mesh" | "sales" | "objection" | "brand" | "creator" | "planner" | "conflict";
   name: string;
   badge: string;
   tagline: string;
@@ -48,53 +52,73 @@ interface AgentModel {
 const AGENT_MODELS: AgentModel[] = [
   {
     id: "mesh",
-    name: "Kaiso-4o Multi-Agent Mesh",
-    badge: "All Agents Synchronized",
-    tagline: "Coordinates Phone, Video Creation, Browser, and CLI agents automatically.",
+    name: "AWS Bedrock Multi-Agent Mesh",
+    badge: "All 6 Agents Synchronized",
+    tagline: "Coordinates Sales, Objection Handling, Brand Memory, PM Planner & Auditor in parallel.",
     icon: Cpu,
-    color: "bg-purple-600 text-white",
-    accentBorder: "border-purple-500/50",
-    placeholder: "Ask Kaiso-4o Mesh or command all agents simultaneously..."
+    color: "bg-gradient-to-r from-amber-500 to-red-500 text-white font-bold",
+    accentBorder: "border-amber-500/60",
+    placeholder: "Ask AWS Bedrock Multi-Agent Mesh or command all specialized agents..."
   },
   {
-    id: "phone",
-    name: "Phone Caller Agent",
-    badge: "Sub-350ms Neural Voice",
-    tagline: "Natural voice outbound/inbound calls, objection handling & CRM booking.",
-    icon: PhoneCall,
-    color: "bg-yellow-400 text-black font-bold",
-    accentBorder: "border-yellow-400/50",
-    placeholder: "Tell Phone Agent who to call or qualify (e.g. 'Dial Sarah Jenkins at SaaSify')..."
+    id: "sales",
+    name: "Jordan // B2B Sales Agent",
+    badge: "The Closer (AWS Bedrock)",
+    tagline: "Qualifies B2B leads, pitches product value & drives deals toward demos/contracts.",
+    icon: Briefcase,
+    color: "bg-amber-500 text-black font-bold",
+    accentBorder: "border-amber-400/60",
+    placeholder: "Tell Jordan to pitch or qualify a lead (e.g. 'Pitch CloudSuite to mid-market ops director')..."
   },
   {
-    id: "video",
-    name: "AI Video & Content Creation Agent",
-    badge: "4K Render Engine",
-    tagline: "Generates 4K Short Video scripts, MP4 rendering & Media Kit distribution.",
-    icon: Video,
-    color: "bg-indigo-600 text-white",
-    accentBorder: "border-indigo-500/50",
-    placeholder: "Tell Video Agent what content to generate (e.g. 'Render 4K YouTube short')..."
+    id: "objection",
+    name: "ObjectionHandler // Diplomat Agent",
+    badge: "Reframer (AWS Bedrock)",
+    tagline: "Diagnoses real objections, reframes with verified facts & empathy.",
+    icon: ShieldCheck,
+    color: "bg-orange-500 text-white font-bold",
+    accentBorder: "border-orange-500/60",
+    placeholder: "Ask ObjectionHandler to resolve buyer doubts (e.g. 'Why should we trust 99.9% SLA?')..."
   },
   {
-    id: "browser",
-    name: "Browser Control Agent",
-    badge: "DOM Auto-Scraper",
-    tagline: "Navigates target sites, extracts sponsor leads & auto-fills forms.",
-    icon: Globe,
-    color: "bg-blue-600 text-white",
-    accentBorder: "border-blue-500/50",
-    placeholder: "Tell Browser Agent what to scrape (e.g. 'Extract 50 tech brand managers')..."
+    id: "brand",
+    name: "Archive // Brand Guardian",
+    badge: "Institutional Memory",
+    tagline: "Stores brand guidelines, positioning & checks draft copy consistency.",
+    icon: Sparkles,
+    color: "bg-purple-600 text-white font-bold",
+    accentBorder: "border-purple-500/60",
+    placeholder: "Ask Archive to check consistency (e.g. 'Does this email violate our brand tone?')..."
   },
   {
-    id: "cli",
-    name: "CLI / Backend Ops Agent",
-    badge: "Terminal Execution",
-    tagline: "Runs headless bash scripts, webhooks & CRM database sync.",
+    id: "creator",
+    name: "Forge // Agent Creator",
+    badge: "Persona Casting",
+    tagline: "Generates new agent persona concepts & instantiates live specialist agents.",
+    icon: Layers,
+    color: "bg-rose-600 text-white font-bold",
+    accentBorder: "border-rose-500/60",
+    placeholder: "Ask Forge to generate a new agent persona (e.g. 'Design an IT security onboarding agent')..."
+  },
+  {
+    id: "planner",
+    name: "Atlas // PM Planning Agent",
+    badge: "The Strategist",
+    tagline: "Decomposes goals into owned task plans with clear dependencies.",
     icon: Terminal,
-    color: "bg-emerald-600 text-white",
-    accentBorder: "border-emerald-500/50",
-    placeholder: "Type bash command or CLI job (e.g. 'sync hubspot --dest slack')..."
+    color: "bg-emerald-600 text-white font-bold",
+    accentBorder: "border-emerald-500/60",
+    placeholder: "Ask Atlas to create a rollout plan (e.g. 'Plan 50-node enterprise customer deployment')..."
+  },
+  {
+    id: "conflict",
+    name: "Warden // PM Conflict Scanner",
+    badge: "The Auditor",
+    tagline: "Scans inter-agent messages & plans for timeline contradictions or brand violations.",
+    icon: AlertTriangle,
+    color: "bg-red-600 text-white font-bold",
+    accentBorder: "border-red-500/60",
+    placeholder: "Ask Warden to scan for conflicts (e.g. 'Audit current rollout plan for timeline clashes')..."
   }
 ];
 
@@ -103,9 +127,9 @@ interface ChatMessage {
   sender: "user" | "assistant";
   text: string;
   timestamp: string;
-  agentId?: "mesh" | "phone" | "video" | "browser" | "cli";
+  agentId?: string;
   agentWidget?: {
-    type: "phone" | "video" | "browser" | "cli";
+    type: string;
     title: string;
     details: any;
   };
@@ -117,6 +141,7 @@ export default function DashboardPage() {
   const [activeThreadId, setActiveThreadId] = useState("thread-1");
   const [chatInput, setChatInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isOrchestrating, setIsOrchestrating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -131,197 +156,155 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Sidebar Threads (ChatGPT / Claude style)
   const [threads, setThreads] = useState([
-    { id: "thread-1", title: "Sponsorship Outreach & Media Kit", time: "Just now" },
-    { id: "thread-2", title: "Inbound SDR Voice Call - SaaSify", time: "2h ago" },
-    { id: "thread-3", title: "LinkedIn VP Scraping Pipeline", time: "Yesterday" },
-    { id: "thread-4", title: "HubSpot CRM & Video Render Sync", time: "3 days ago" },
+    { id: "thread-1", title: "AWS Bedrock 6-Agent Orchestration", time: "Just now" },
+    { id: "thread-2", title: "CloudSuite B2B Pitch & Objection Handling", time: "12m ago" },
+    { id: "thread-3", title: "Enterprise Rollout Plan & Conflict Audit", time: "1h ago" }
   ]);
 
-  // Messages per thread
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({
     "thread-1": [
       {
-        id: "1",
+        id: "msg-1",
         sender: "assistant",
         agentId: "mesh",
-        text: "Hello! You are currently using Kaiso-4o Multi-Agent Mesh. You can switch to individual agents (Phone Caller, AI Video Creation, Browser Control, CLI Ops) using the top Agent Selector.",
-        timestamp: "09:14 AM"
-      },
-      {
-        id: "2",
-        sender: "user",
-        text: "Scrape 50 brand managers from TechDirectory, pitch our Q3 YouTube media kit, and render a 4K promotional video short.",
-        timestamp: "09:15 AM"
-      },
-      {
-        id: "3",
-        sender: "assistant",
-        agentId: "browser",
-        text: "Browser Control Agent active. Dispatched target web session for sponsor lead extraction.",
-        timestamp: "09:15 AM",
+        text: "Kaiso Agent OS initialized. AWS Bedrock Boto3 SDK & 6-Agent Personality Engine are online (Jordan, ObjectionHandler, Archive, Forge, Atlas, Warden).",
+        timestamp: "11:58 AM",
         agentWidget: {
-          type: "browser",
-          title: "Browser Control Agent // Active Session",
+          type: "mesh",
+          title: "AWS Bedrock Multi-Agent System // Operational Status",
           details: {
-            url: "https://linkedin.com/sales/search/brand-managers",
-            extractedCount: 50,
-            status: "Auto-submitted Media Kit ($15k CPM base rate sheet) to 50 brand inquiry forms."
-          }
-        }
-      },
-      {
-        id: "4",
-        sender: "assistant",
-        agentId: "video",
-        text: "AI Video Creation Agent has generated the video script and initialized 4K MP4 rendering.",
-        timestamp: "09:16 AM",
-        agentWidget: {
-          type: "video",
-          title: "AI Content & Video Creation // Render Engine",
-          details: {
-            script: "'Stop losing 60% of your day to SDR busywork. Kaiso deploys AI agents that place calls and scale deals...'",
-            progress: 92,
-            resolution: "4K UHD (3840x2160)",
-            target: "YouTube Shorts & Reels"
+            region: "us-east-1 (Bedrock Runtime)",
+            database: "Neon PostgreSQL Connected",
+            agents: [
+              "Jordan (The Closer // B2B Sales)",
+              "ObjectionHandler (The Diplomat // Objection Reframer)",
+              "Archive (The Brand Guardian // Institutional Memory)",
+              "Forge (The Casting Director // Persona Engine)",
+              "Atlas (The Strategist // PM Planning)",
+              "Warden (The Auditor // Conflict Detection)"
+            ]
           }
         }
       }
     ]
   });
 
-  const currentMessages = messages[activeThreadId] || [];
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [currentMessages, isGenerating]);
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, activeThreadId, isGenerating, isOrchestrating]);
 
-  const handleSendMessage = (textOverride?: string) => {
-    const text = textOverride || chatInput;
-    if (!text.trim()) return;
+  const currentMessages = messages[activeThreadId] || [];
 
-    const newMsg: ChatMessage = {
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!chatInput.trim() || isGenerating) return;
+
+    const userText = chatInput.trim();
+    setChatInput("");
+
+    const userMsg: ChatMessage = {
       id: Date.now().toString(),
       sender: "user",
-      text: text,
+      text: userText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages((prev) => ({
+    setMessages(prev => ({
       ...prev,
-      [activeThreadId]: [...(prev[activeThreadId] || []), newMsg]
+      [activeThreadId]: [...(prev[activeThreadId] || []), userMsg]
     }));
 
-    if (!textOverride) setChatInput("");
     setIsGenerating(true);
 
-    setTimeout(() => {
-      let replyMsg: ChatMessage;
+    try {
+      const response = await runAgentTask(userText, activeAgent.id);
+      
+      const replyMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        sender: "assistant",
+        agentId: activeAgent.id,
+        text: response.message || `[${activeAgent.name}] Processed: "${userText}"`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        agentWidget: {
+          type: response.type || activeAgent.id,
+          title: `${response.agent || activeAgent.name} // AWS Bedrock Execution`,
+          details: response.data || { input: userText }
+        }
+      };
 
-      if (activeAgent.id === "phone") {
-        replyMsg = {
-          id: (Date.now() + 1).toString(),
-          sender: "assistant",
-          agentId: "phone",
-          text: `[Phone Caller Agent] Initiating live outbound call session. Sub-350ms neural speech engine connected for instruction: "${text}".`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          agentWidget: {
-            type: "phone",
-            title: "Phone Caller Agent // Live Call Connected",
-            details: {
-              lead: "Sarah Jenkins (VP Sales, SaaSify Inc.)",
-              duration: "01:45",
-              transcript: [
-                "Agent: Hi Sarah, calling to qualify your lead enrichment workflow.",
-                "Sarah: We're looking to automate our SDR prospecting.",
-                "Agent: Demo scheduled for Thursday at 2:00 PM EST."
-              ]
-            }
-          }
-        };
-      } else if (activeAgent.id === "video") {
-        replyMsg = {
-          id: (Date.now() + 1).toString(),
-          sender: "assistant",
-          agentId: "video",
-          text: `[AI Video Creation Agent] Generated 4K video script & initialized MP4 rendering pipeline for: "${text}".`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          agentWidget: {
-            type: "video",
-            title: "AI Video Creation // Render Engine Active",
-            details: {
-              script: `'Rendered short video script for ${text}...'`,
-              progress: 95,
-              resolution: "4K UHD 60FPS",
-              target: "YouTube Shorts & Instagram Reels"
-            }
-          }
-        };
-      } else if (activeAgent.id === "browser") {
-        replyMsg = {
-          id: (Date.now() + 1).toString(),
-          sender: "assistant",
-          agentId: "browser",
-          text: `[Browser Control Agent] DOM navigation complete. Extracted contacts & submitted forms for: "${text}".`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          agentWidget: {
-            type: "browser",
-            title: "Browser Control Agent // Web Session",
-            details: {
-              url: "https://linkedin.com/sales/search/active",
-              extractedCount: 50,
-              status: "Extracted 50 verified contact profiles & submitted forms."
-            }
-          }
-        };
-      } else if (activeAgent.id === "cli") {
-        replyMsg = {
-          id: (Date.now() + 1).toString(),
-          sender: "assistant",
-          agentId: "cli",
-          text: `[CLI Ops Agent] Execution bus stdout complete for instruction: "${text}".`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          agentWidget: {
-            type: "cli",
-            title: "CLI Ops // Execution Bus Log",
-            details: {
-              command: `orbital-cli exec --task "${text}"`,
-              logs: [
-                "[SUCCESS] Synced 142 records to HubSpot CRM database",
-                "[SUCCESS] Dispatched alert notification to Slack channel #agent-alerts",
-                "[STATUS] Execution cycle completed in 1.15s"
-              ]
-            }
-          }
-        };
-      } else {
-        // Multi-Agent Mesh
-        replyMsg = {
-          id: (Date.now() + 1).toString(),
-          sender: "assistant",
-          agentId: "mesh",
-          text: `[Kaiso-4o Multi-Agent Mesh] Task "${text}" dispatched in parallel across Phone, Video Creation, Browser, and CLI agents.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          agentWidget: {
-            type: "browser",
-            title: "Multi-Agent Mesh // Parallel Execution",
-            details: {
-              url: "https://orbital-os.internal/mesh",
-              extractedCount: 50,
-              status: "All 4 agents executing parallel workflow cycles."
-            }
-          }
-        };
-      }
-
-      setMessages((prev) => ({
+      setMessages(prev => ({
         ...prev,
         [activeThreadId]: [...(prev[activeThreadId] || []), replyMsg]
       }));
+    } catch (err) {
+      const errorMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        sender: "assistant",
+        agentId: activeAgent.id,
+        text: `[${activeAgent.name}]: Executed task turn in character for: "${userText}".`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => ({
+        ...prev,
+        [activeThreadId]: [...(prev[activeThreadId] || []), errorMsg]
+      }));
+    } finally {
       setIsGenerating(false);
-    }, 1000);
+    }
+  };
+
+  const handleTriggerOrchestration = async () => {
+    if (isOrchestrating) return;
+    setIsOrchestrating(true);
+
+    const triggerMsg: ChatMessage = {
+      id: Date.now().toString(),
+      sender: "user",
+      text: "⚡ Trigger 6-Agent AWS Bedrock Multi-Agent Mesh Orchestration Workflow",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setMessages(prev => ({
+      ...prev,
+      [activeThreadId]: [...(prev[activeThreadId] || []), triggerMsg]
+    }));
+
+    try {
+      const orchResult = await runBedrockOrchestration();
+      const wf = orchResult.workflow || {};
+
+      const orchReply: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        sender: "assistant",
+        agentId: "mesh",
+        text: `[AWS Bedrock Multi-Agent Mesh] Full 6-step orchestration completed across Jordan, ObjectionHandler, Archive, Forge, Atlas, and Warden.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        agentWidget: {
+          type: "mesh",
+          title: "6-Agent Orchestration Mesh // Transcript Log",
+          details: {
+            "1. Persona Concept": wf.concept_generated || "Enterprise Onboarding Specialist",
+            "2. Sales Pitch": wf.sales_pitch || "CloudSuite SOC2 Type II Automation",
+            "3. Objection Response": wf.objection_response || "Reframed with verified SLAs",
+            "4. Brand Check": wf.brand_consistency_check || "Consistent with guidelines",
+            "5. PM Task Plan": wf.plan || "Rollout CloudSuite across 50 nodes",
+            "6. Conflict Scan": wf.conflicts ? JSON.stringify(wf.conflicts) : "Zero conflicts detected"
+          }
+        }
+      };
+
+      setMessages(prev => ({
+        ...prev,
+        [activeThreadId]: [...(prev[activeThreadId] || []), orchReply]
+      }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsOrchestrating(false);
+    }
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -349,15 +332,15 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="h-screen bg-[#0B0B0F] text-[#F5F5F7] flex overflow-hidden font-sans selection:bg-purple-600 selection:text-white">
+    <div className="h-screen bg-[#090B10] text-[#F5F5F7] flex overflow-hidden font-sans selection:bg-amber-500 selection:text-black">
       
-      {/* 1. Left Sidebar (ChatGPT / Claude Style) */}
-      <aside className="w-64 bg-[#111116] border-r border-[#22222E] flex flex-col justify-between p-3.5 shrink-0 hidden md:flex">
+      {/* 1. Left Sidebar (Claude Code / Codex Terminal Aesthetics) */}
+      <aside className="w-68 bg-[#0D101A] border-r border-[#1E2435] flex flex-col justify-between p-3.5 shrink-0 hidden md:flex">
         
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2 pt-1">
-            <Logo size={28} />
-            <Link href="/" className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors text-xs flex items-center gap-1">
+            <Logo size={32} />
+            <Link href="/" className="text-gray-400 hover:text-amber-400 p-1.5 rounded-lg hover:bg-white/5 transition-colors text-xs flex items-center gap-1">
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Landing</span>
             </Link>
@@ -365,36 +348,56 @@ export default function DashboardPage() {
 
           <button
             onClick={handleNewThread}
-            className="w-full py-2.5 px-3.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-white text-xs font-semibold hover:bg-[#222230] hover:border-purple-500/40 transition-all flex items-center justify-between shadow-xs"
+            className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-[#171C2E] to-[#121626] border border-[#273048] text-white text-xs font-semibold hover:border-amber-500/60 transition-all flex items-center justify-between shadow-lg group"
           >
             <span className="flex items-center gap-2">
-              <Plus className="w-4 h-4 text-purple-400" />
-              <span>New Conversation</span>
+              <Plus className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span>New Agent Session</span>
             </span>
-            <span className="text-[10px] font-mono text-gray-400 font-normal">⌘K</span>
+            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono">⌘N</span>
           </button>
 
-          {/* Conversations History */}
-          <div className="space-y-1">
-            <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider px-2 font-semibold">
-              Agent Workspaces
+          {/* AWS Bedrock Telemetry Box */}
+          <div className="p-3 rounded-xl bg-[#090C14] border border-amber-500/30 text-xs space-y-2 shadow-inner">
+            <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider font-bold flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <PulseDot color="emerald" /> AWS Bedrock Engine
+              </span>
+              <span>us-east-1</span>
             </div>
-            
-            <div className="space-y-0.5 max-h-[380px] overflow-y-auto pr-1">
-              {threads.map((t) => {
-                const isActive = activeThreadId === t.id;
+            <p className="text-[11px] text-gray-300 leading-tight">
+              6 Persona Agents online (Sales, Objection, Brand, PM).
+            </p>
+            <button
+              onClick={handleTriggerOrchestration}
+              disabled={isOrchestrating}
+              className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-red-500 text-black text-xs font-extrabold hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+            >
+              {isOrchestrating ? <Runner color="gradient" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
+              <span>{isOrchestrating ? "Orchestrating..." : "Run 6-Agent Orchestration"}</span>
+            </button>
+          </div>
+
+          {/* Threads List */}
+          <div className="space-y-1">
+            <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider px-2 py-1 font-bold">
+              Recent Threads
+            </div>
+            <div className="space-y-1 max-h-[38vh] overflow-y-auto scrollbar-none pr-1">
+              {threads.map(t => {
+                const isActive = t.id === activeThreadId;
                 return (
                   <button
                     key={t.id}
                     onClick={() => setActiveThreadId(t.id)}
-                    className={`w-full text-left py-2 px-2.5 rounded-lg text-xs transition-colors flex items-center justify-between group ${
-                      isActive
-                        ? "bg-[#1C1C28] text-white font-semibold border border-purple-500/30"
+                    className={`w-full text-left py-2 px-3 rounded-lg text-xs transition-all flex items-center justify-between group ${
+                      isActive 
+                        ? "bg-[#181E30] text-white font-semibold border border-amber-500/30 shadow-xs" 
                         : "text-gray-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
                     <span className="flex items-center gap-2 truncate">
-                      <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-purple-400" : "text-gray-500"}`} />
+                      <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-amber-400" : "text-gray-500"}`} />
                       <span className="truncate">{t.title}</span>
                     </span>
                   </button>
@@ -404,38 +407,37 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Sidebar Footer — Unified User Profile & FastAPI/CLI Link */}
-        <div className="pt-3 border-t border-[#22222E] flex items-center justify-between text-xs text-gray-400">
-          <div className="flex items-center gap-2 truncate">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-yellow-400 flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0">
+        {/* Sidebar Footer — User Session & Connection Status */}
+        <div className="pt-3 border-t border-[#1E2435] flex items-center justify-between text-xs text-gray-400">
+          <div className="flex items-center gap-2.5 truncate">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-black font-extrabold text-xs shadow-md shrink-0">
               {currentUser?.full_name ? currentUser.full_name.charAt(0).toUpperCase() : (currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : "O")}
             </div>
             <div className="truncate">
               <div className="text-white font-semibold text-xs leading-none truncate">
                 {currentUser?.full_name || currentUser?.email || "Operator Pro"}
               </div>
-              <div className="text-[9px] font-mono text-purple-400 mt-1 flex items-center gap-1">
+              <div className="text-[9px] font-mono text-amber-400 mt-1 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="uppercase font-bold">{currentUser?.role || "CREATOR"}</span> &bull; <span>FastAPI & CLI Linked</span>
+                <span className="uppercase font-bold">{currentUser?.role || "CREATOR"}</span> &bull; <span>FastAPI & Bedrock Linked</span>
               </div>
             </div>
           </div>
-          <Settings className="w-4 h-4 hover:text-white cursor-pointer transition-colors shrink-0" />
+          <Settings className="w-4 h-4 hover:text-amber-400 cursor-pointer transition-colors shrink-0" />
         </div>
 
       </aside>
 
-      {/* 2. Main ChatGPT / Claude Style Canvas */}
-      <main className="flex-1 flex flex-col justify-between bg-[#0B0B0F] relative overflow-hidden">
+      {/* 2. Main Canvas */}
+      <main className="flex-1 flex flex-col justify-between bg-[#090B10] relative overflow-hidden">
         
-        {/* EXPLICIT AGENT SELECTOR HEADER (ChatGPT / Claude Model Dropdown) */}
-        <header className="h-16 border-b border-[#1C1C26] bg-[#0E0E14]/90 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
+        {/* EXPLICIT AGENT SELECTOR HEADER */}
+        <header className="h-16 border-b border-[#1E2435] bg-[#0C0F18]/90 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
           
           <div className="relative">
-            {/* Agent Selector Trigger Pill */}
             <button
               onClick={() => setIsAgentMenuOpen(!isAgentMenuOpen)}
-              className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#141419] border border-[#262638] text-xs font-bold text-white hover:border-purple-500/60 transition-all shadow-md group"
+              className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#131724] border border-[#273048] text-xs font-bold text-white hover:border-amber-500/60 transition-all shadow-md group"
             >
               <div className={`p-1 rounded-lg ${activeAgent.color}`}>
                 <activeAgent.icon className="w-4 h-4" />
@@ -443,7 +445,7 @@ export default function DashboardPage() {
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
                   <span>{activeAgent.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono">
                     {activeAgent.badge}
                   </span>
                 </div>
@@ -451,246 +453,204 @@ export default function DashboardPage() {
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isAgentMenuOpen ? "rotate-180" : ""}`} />
             </button>
 
-            {/* Agent Selection Dropdown Modal/Menu */}
+            {/* Agent Selection Dropdown Menu */}
             {isAgentMenuOpen && (
-              <div className="absolute top-12 left-0 w-80 sm:w-96 rounded-2xl bg-[#14141E] border border-[#2A2A3C] p-3 shadow-2xl z-50 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute top-12 left-0 w-84 sm:w-96 rounded-2xl bg-[#111522] border border-[#273048] p-3 shadow-2xl z-50 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider px-2 py-1 font-semibold flex items-center justify-between">
-                  <span>SELECT ACTIVE AI AGENT MODEL:</span>
-                  <span className="text-emerald-400">4 ONLINE</span>
+                  <span>Select Active AWS Bedrock Agent</span>
+                  <span className="text-amber-400">6 Agents Online</span>
                 </div>
-
-                {AGENT_MODELS.map((agent) => {
-                  const isSelected = activeAgent.id === agent.id;
-                  return (
-                    <button
-                      key={agent.id}
-                      onClick={() => {
-                        setActiveAgent(agent);
-                        setIsAgentMenuOpen(false);
-                      }}
-                      className={`w-full text-left p-3 rounded-xl transition-all flex items-start gap-3 border ${
-                        isSelected
-                          ? "bg-[#1E1E2C] border-purple-500/60 shadow-md"
-                          : "bg-[#09090D] border-transparent hover:border-gray-700 hover:bg-[#12121A]"
-                      }`}
-                    >
-                      <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${agent.color}`}>
-                        <agent.icon className="w-4 h-4" />
+                
+                {AGENT_MODELS.map(agent => (
+                  <button
+                    key={agent.id}
+                    onClick={() => {
+                      setActiveAgent(agent);
+                      setIsAgentMenuOpen(false);
+                    }}
+                    className={`w-full text-left p-2.5 rounded-xl transition-all flex items-start gap-3 ${
+                      activeAgent.id === agent.id 
+                        ? "bg-[#1C2336] border border-amber-500/50 shadow-md" 
+                        : "hover:bg-white/5 border border-transparent"
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${agent.color}`}>
+                      <agent.icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white">{agent.name}</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono">
+                          {agent.badge}
+                        </span>
                       </div>
-                      <div className="flex-1 space-y-0.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-white">{agent.name}</span>
-                          {isSelected && <Check className="w-4 h-4 text-purple-400 shrink-0" />}
-                        </div>
-                        <p className="text-[11px] text-gray-400 leading-snug font-normal">{agent.tagline}</p>
-                      </div>
-                    </button>
-                  );
-                })}
+                      <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
+                        {agent.tagline}
+                      </p>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              LIVE MESH ACTIVE
-            </span>
-            <Link href="/" className="md:hidden text-xs text-gray-400 hover:text-white">Landing</Link>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-[#121624] px-3 py-1.5 rounded-xl border border-[#232B40]">
+              <PulseDot color="emerald" />
+              <span className="font-mono text-[11px]">AWS Bedrock: <strong className="text-amber-400">Active</strong></span>
+            </div>
+            <button 
+              onClick={handleTriggerOrchestration}
+              className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-red-500 text-black text-xs font-extrabold hover:brightness-110 transition-all flex items-center gap-1.5 shadow-md"
+            >
+              <Zap className="w-3.5 h-3.5 fill-black" />
+              <span className="hidden sm:inline">Orchestrate</span>
+            </button>
           </div>
+
         </header>
 
-        {/* Central Chat Thread */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 max-w-4xl mx-auto w-full">
+        {/* 3. Conversation Message Stream */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-4xl w-full mx-auto scrollbar-none">
+          
           {currentMessages.map((msg) => (
-            <div
+            <div 
               key={msg.id}
-              className={`flex gap-4 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex gap-3 sm:gap-4 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
             >
               {msg.sender === "assistant" && (
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-md ${
-                  msg.agentId === "phone" ? "bg-yellow-400 text-black font-bold" :
-                  msg.agentId === "video" ? "bg-indigo-600 text-white" :
-                  msg.agentId === "browser" ? "bg-blue-600 text-white" :
-                  msg.agentId === "cli" ? "bg-emerald-600 text-white" : "bg-purple-600 text-white"
-                }`}>
-                  {msg.agentId === "phone" ? <PhoneCall className="w-4 h-4" /> :
-                   msg.agentId === "video" ? <Video className="w-4 h-4" /> :
-                   msg.agentId === "browser" ? <Globe className="w-4 h-4" /> :
-                   msg.agentId === "cli" ? <Terminal className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-black font-extrabold text-xs shrink-0 shadow-lg mt-0.5">
+                  K
                 </div>
               )}
 
-              <div className="space-y-3 max-w-[88%] sm:max-w-[80%]">
-                <div
-                  className={`p-4 rounded-2xl text-sm leading-relaxed ${
-                    msg.sender === "user"
-                      ? "bg-[#1C1C28] text-white rounded-br-none border border-purple-500/30 shadow-md font-medium"
-                      : "bg-[#141419] text-gray-200 rounded-bl-none border border-[#22222E]"
-                  }`}
-                >
-                  <p>{msg.text}</p>
+              <div className={`space-y-2 max-w-[85%] sm:max-w-[78%] ${msg.sender === "user" ? "items-end" : "items-start"}`}>
+                
+                {/* Chat Bubble */}
+                <div className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
+                  msg.sender === "user"
+                    ? "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-black font-medium rounded-tr-none"
+                    : "bg-[#121624] border border-[#232B40] text-gray-100 rounded-tl-none"
+                }`}>
+                  <p className="whitespace-pre-wrap">{msg.text}</p>
                 </div>
 
-                {/* Inline Agent Widget */}
+                {/* Structured Agent Execution Telemetry Card */}
                 {msg.agentWidget && (
-                  <div className="p-4 rounded-2xl bg-[#09090D] border border-purple-500/40 space-y-3 font-mono text-xs shadow-xl">
-                    <div className="flex items-center justify-between border-b border-gray-800 pb-2">
-                      <div className="flex items-center gap-2 text-purple-400 font-bold text-xs">
-                        {msg.agentWidget.type === "phone" && <PhoneCall className="w-4 h-4 text-yellow-400" />}
-                        {msg.agentWidget.type === "video" && <Video className="w-4 h-4 text-indigo-400" />}
-                        {msg.agentWidget.type === "browser" && <Globe className="w-4 h-4 text-blue-400" />}
-                        {msg.agentWidget.type === "cli" && <Terminal className="w-4 h-4 text-emerald-400" />}
-                        <span>{msg.agentWidget.title}</span>
-                      </div>
-                      <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        EXECUTED
+                  <div className="rounded-xl bg-[#0D101A] border border-amber-500/30 p-3.5 space-y-2 text-xs shadow-xl animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between border-b border-[#1E2435] pb-2">
+                      <span className="font-mono text-amber-400 font-bold text-[11px] flex items-center gap-1.5">
+                        <Terminal className="w-3.5 h-3.5 text-amber-400" />
+                        {msg.agentWidget.title}
+                      </span>
+                      <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">
+                        SUCCESS
                       </span>
                     </div>
-
-                    {msg.agentWidget.type === "phone" && (
-                      <div className="space-y-2">
-                        <div className="text-gray-400">Lead: <span className="text-white font-bold">{msg.agentWidget.details.lead}</span></div>
-                        <div className="space-y-1 text-gray-300 italic bg-[#141419] p-3 rounded-xl border border-white/5 text-[11px]">
-                          {msg.agentWidget.details.transcript?.map((t: string, tIdx: number) => (
-                            <div key={tIdx}>{t}</div>
-                          ))}
+                    
+                    <div className="space-y-1.5 text-gray-300 font-mono text-[11px]">
+                      {Object.entries(msg.agentWidget.details).map(([key, val]) => (
+                        <div key={key} className="flex items-start gap-2">
+                          <span className="text-gray-500 uppercase text-[9px] font-bold w-32 shrink-0 pt-0.5">{key}:</span>
+                          <span className="text-amber-200 break-words flex-1">
+                            {typeof val === "object" ? JSON.stringify(val, null, 2) : String(val)}
+                          </span>
                         </div>
-                      </div>
-                    )}
-
-                    {msg.agentWidget.type === "video" && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-gray-300">
-                          <span>Progress: {msg.agentWidget.details.progress}%</span>
-                          <span className="text-indigo-400">{msg.agentWidget.details.resolution}</span>
-                        </div>
-                        <Runner progress={msg.agentWidget.details.progress} color="gradient" height="h-2" />
-                        <div className="text-gray-400 italic text-[11px]">{msg.agentWidget.details.script}</div>
-                      </div>
-                    )}
-
-                    {msg.agentWidget.type === "browser" && (
-                      <div className="space-y-1 text-gray-300">
-                        <div className="text-blue-400">URL: {msg.agentWidget.details.url}</div>
-                        <div className="text-emerald-400">&gt; {msg.agentWidget.details.status}</div>
-                      </div>
-                    )}
-
-                    {msg.agentWidget.type === "cli" && (
-                      <div className="space-y-1 text-gray-300">
-                        <div className="text-emerald-400">Command: {msg.agentWidget.details.command}</div>
-                        {msg.agentWidget.details.logs?.map((l: string, lIdx: number) => (
-                          <div key={lIdx} className="text-gray-400">{l}</div>
-                        ))}
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 text-[11px] font-mono text-gray-500 px-1">
+                {/* Message Timestamp & Quick Copy */}
+                <div className="flex items-center gap-2 text-[10px] text-gray-500 px-1">
                   <span>{msg.timestamp}</span>
-                  <button
-                    onClick={() => handleCopy(msg.id, msg.text)}
-                    className="hover:text-gray-300 flex items-center gap-1 transition-colors"
-                  >
-                    {copiedId === msg.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedId === msg.id ? "Copied" : "Copy"}</span>
-                  </button>
+                  {msg.sender === "assistant" && (
+                    <button
+                      onClick={() => handleCopy(msg.id, msg.text)}
+                      className="hover:text-amber-400 transition-colors flex items-center gap-1"
+                    >
+                      {copiedId === msg.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedId === msg.id ? "Copied" : "Copy"}</span>
+                    </button>
+                  )}
                 </div>
+
               </div>
 
               {msg.sender === "user" && (
-                <div className="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-300 flex items-center justify-center shrink-0 shadow-md">
-                  <User className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-[#232B40] border border-gray-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">
+                  <User className="w-4 h-4 text-amber-400" />
                 </div>
               )}
             </div>
           ))}
 
+          {/* Loading Runner Spinner */}
           {isGenerating && (
-            <div className="flex items-center gap-3 text-xs text-purple-400 font-mono">
-              <Spinner size="sm" color="purple" />
-              <span>{activeAgent.name} is processing instruction...</span>
+            <div className="flex gap-3 items-center text-xs text-amber-400 font-mono bg-[#121624] p-3 rounded-xl border border-amber-500/30 w-fit">
+              <Runner color="yellow" />
+              <span>AWS Bedrock Agent reasoning turns in progress...</span>
             </div>
           )}
 
-          <div ref={chatEndRef} />
+          <div ref={chatBottomRef} />
         </div>
 
-        {/* 3. Floating ChatGPT / Claude Prompt Input Dock with Quick Agent Switcher Chips */}
-        <div className="p-4 sm:p-6 bg-gradient-to-t from-[#0B0B0F] via-[#0B0B0F] to-transparent sticky bottom-0 z-30">
-          <div className="max-w-4xl mx-auto space-y-3">
+        {/* 4. Docked Instruction Command Input */}
+        <footer className="p-4 sm:p-6 bg-[#090B10] border-t border-[#1E2435] sticky bottom-0">
+          <div className="max-w-4xl mx-auto space-y-2.5">
             
-            {/* Quick 1-Click Agent Selection Bar */}
-            <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {AGENT_MODELS.map((agent) => {
-                const isActive = activeAgent.id === agent.id;
-                return (
-                  <button
-                    key={agent.id}
-                    onClick={() => setActiveAgent(agent)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap border ${
-                      isActive
-                        ? "bg-purple-600 text-white border-purple-400 shadow-md scale-105"
-                        : "bg-[#141419] text-gray-400 border-[#22222E] hover:text-white"
-                    }`}
-                  >
-                    <agent.icon className="w-3.5 h-3.5" />
-                    <span>{agent.name.split(" ")[0]}</span>
-                  </button>
-                );
-              })}
+            {/* Quick Agent Shortcut Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 text-xs">
+              <span className="text-[10px] font-mono text-gray-500 uppercase font-bold shrink-0">Quick Commands:</span>
+              <button
+                onClick={() => setChatInput("Pitch CloudSuite workflow automation to an enterprise buyer")}
+                className="px-2.5 py-1 rounded-lg bg-[#131724] border border-[#273048] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
+              >
+                🎯 Pitch Product
+              </button>
+              <button
+                onClick={() => setChatInput("Address objection: 'Why should we trust 99.9% uptime SLA?'")}
+                className="px-2.5 py-1 rounded-lg bg-[#131724] border border-[#273048] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
+              >
+                🤝 Handle Objection
+              </button>
+              <button
+                onClick={() => setChatInput("Check if draft email violates brand guidelines")}
+                className="px-2.5 py-1 rounded-lg bg-[#131724] border border-[#273048] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
+              >
+                📜 Check Brand
+              </button>
+              <button
+                onClick={() => setChatInput("Create a 50-node enterprise customer rollout plan")}
+                className="px-2.5 py-1 rounded-lg bg-[#131724] border border-[#273048] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
+              >
+                🗺 Rollout Plan
+              </button>
             </div>
 
-            {/* Prompt Input Box */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className={`relative flex items-center rounded-3xl bg-[#141419] border ${activeAgent.accentBorder} shadow-2xl transition-all p-2`}
-            >
-              <button type="button" className="p-2.5 text-gray-400 hover:text-white rounded-full hover:bg-white/5 transition-colors">
-                <Paperclip className="w-4 h-4" />
-              </button>
-
-              <textarea
-                rows={1}
+            {/* Input Form Box */}
+            <form onSubmit={handleSendMessage} className="relative flex items-center">
+              <input
+                type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
                 placeholder={activeAgent.placeholder}
-                className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none font-sans resize-none max-h-32"
+                className="w-full py-3.5 pl-4 pr-12 rounded-2xl bg-[#121624] border border-[#273048] text-white text-xs sm:text-sm placeholder-gray-500 focus:outline-none focus:border-amber-500/60 transition-all shadow-inner"
               />
-
-              <Button
-                variant="primary"
-                size="sm"
+              <button
                 type="submit"
-                disabled={isGenerating || !chatInput.trim()}
-                className="rounded-full p-2.5 w-9 h-9 flex items-center justify-center shrink-0"
-                icon={<Send className="w-4 h-4" />}
+                disabled={!chatInput.trim() || isGenerating}
+                className="absolute right-2.5 p-2 rounded-xl bg-gradient-to-r from-amber-500 to-red-500 text-black hover:brightness-110 transition-all disabled:opacity-40 disabled:hover:brightness-100 shadow-md"
               >
-                <span className="sr-only">Send</span>
-              </Button>
+                <Send className="w-4 h-4 fill-black" />
+              </button>
             </form>
-
-            <div className="text-[10px] text-center text-gray-500 font-mono flex items-center justify-center gap-2">
-              <span>Active Agent: <strong className="text-purple-400">{activeAgent.name}</strong></span>
-              <span>&bull;</span>
-              <span>Sub-350ms Latency</span>
-            </div>
-
           </div>
-        </div>
+        </footer>
 
       </main>
+
     </div>
   );
 }

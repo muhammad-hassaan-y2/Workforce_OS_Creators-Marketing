@@ -1,4 +1,4 @@
-// FastAPI Backend Authentication API Client
+// FastAPI Backend Authentication & AWS Bedrock Agent API Client
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 export interface UserProfile {
@@ -59,4 +59,37 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
     localStorage.setItem("kaiso_user", JSON.stringify(data.user));
   }
   return data;
+}
+
+export async function runAgentTask(prompt: string, agentType: string = "mesh"): Promise<any> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("kaiso_access_token") : null;
+  const res = await fetch(`${API_BASE_URL}/agents/run`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ prompt, agent_type: agentType })
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to execute agent task.");
+  }
+  return res.json();
+}
+
+export async function runBedrockOrchestration(): Promise<any> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("kaiso_access_token") : null;
+  const res = await fetch(`${API_BASE_URL}/bedrock/orchestrate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to execute Bedrock multi-agent orchestration workflow.");
+  }
+  return res.json();
 }
