@@ -47,6 +47,37 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
 
   if (!isOpen) return null;
 
+  const handleDemoLogin = async () => {
+    setErrorMessage(null);
+    setIsLoading(true);
+
+    const demoEmail = "demo@kaiso.ai";
+    const demoPassword = "DemoOperator123!";
+    const demoName = "Demo Operator Pro";
+
+    try {
+      try {
+        await loginUser(demoEmail, demoPassword);
+      } catch {
+        await signupUser(demoEmail, demoPassword, demoName, "creator");
+      }
+
+      // Store auth cookie for middleware protection
+      document.cookie = `kaiso_access_token=token; path=/; max-age=86400`;
+
+      setSubmitted(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        setSubmitted(false);
+        onClose();
+        router.push("/dashboard");
+      }, 800);
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err.message || "Demo login failed.");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -58,6 +89,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
       } else {
         await loginUser(email, password);
       }
+
+      document.cookie = `kaiso_access_token=token; path=/; max-age=86400`;
 
       setSubmitted(true);
       setTimeout(() => {
@@ -275,6 +308,19 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signup" }: A
                 ? "Connecting to FastAPI..." 
                 : mode === "signup" ? "Create Real-Time Account" : "Sign In to Workspace"}
             </Button>
+
+            {/* 1-Click Demo Quick Login Button */}
+            <div className="pt-2 text-center space-y-2">
+              <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider font-bold">or use instant demo account</div>
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={isLoading}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold hover:brightness-125 transition-all flex items-center justify-center gap-2 shadow-md"
+              >
+                <span>🚀 1-Click Demo Quick Login</span>
+              </button>
+            </div>
 
             {/* Micro Guarantee */}
             <div className="text-[10px] text-center text-gray-500 pt-2 font-mono flex items-center justify-center gap-1">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
@@ -229,16 +230,23 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, [isCallActive]);
 
+  const router = useRouter();
+
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const token = localStorage.getItem("kaiso_access_token");
       const rawUser = localStorage.getItem("kaiso_user");
-      if (rawUser) {
-        try {
-          setCurrentUser(JSON.parse(rawUser));
-        } catch {}
+      if (!token || !rawUser) {
+        router.push("/?auth=login");
+        return;
+      }
+      try {
+        setCurrentUser(JSON.parse(rawUser));
+      } catch {
+        router.push("/?auth=login");
       }
     }
-  }, []);
+  }, [router]);
 
   const [threads, setThreads] = useState<Array<{ id: string; title: string; time: string }>>([
     { id: "thread-1", title: "AWS Bedrock 6-Agent Session", time: "Just now" }
@@ -395,10 +403,6 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2 pt-1">
             <Logo size={32} />
-            <Link href="/" className="text-gray-400 hover:text-amber-400 p-1.5 rounded-lg hover:bg-white/5 transition-colors text-xs flex items-center gap-1">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Landing</span>
-            </Link>
           </div>
 
           {/* View Switcher: Chat vs Agent Usage Dashboard */}
