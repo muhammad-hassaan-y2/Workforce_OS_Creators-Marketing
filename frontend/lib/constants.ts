@@ -9,7 +9,6 @@ export const NAV_LINKS = [
   { name: "CLI Install", href: "#cli" },
   { name: "Use Cases", href: "#use-cases" },
   { name: "Playground", href: "#playground" },
-  { name: "Pricing", href: "#pricing" },
   { name: "FAQ", href: "#faq" },
 ];
 
