@@ -5,7 +5,14 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Spinner, Runner, PulseDot } from "@/components/ui/Spinner";
-import { runAgentTask, runBedrockOrchestration } from "@/lib/api";
+import { 
+  runAgentTask, 
+  runBedrockOrchestration, 
+  fetchThreads, 
+  createThread, 
+  fetchThreadMessages, 
+  postChatMessage 
+} from "@/lib/api";
 import { 
   Bot, 
   User, 
@@ -233,15 +240,57 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const [threads, setThreads] = useState([
-    { id: "thread-1", title: "AWS Bedrock 6-Agent Session", time: "Just now" },
-    { id: "thread-2", title: "CloudSuite B2B Pitch & Objection Handling", time: "12m ago" },
-    { id: "thread-3", title: "Enterprise Rollout Plan & Conflict Audit", time: "1h ago" }
+  const [threads, setThreads] = useState<Array<{ id: string; title: string; time: string }>>([
+    { id: "thread-1", title: "AWS Bedrock 6-Agent Session", time: "Just now" }
   ]);
 
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({
     "thread-1": []
   });
+
+  // 1. Fetch User Session Threads from Neon PostgreSQL DB on Mount
+  useEffect(() => {
+    async function loadDBThreads() {
+      try {
+        const dbThreads = await fetchThreads();
+        if (dbThreads && dbThreads.length > 0) {
+          setThreads(dbThreads.map(t => ({
+            id: t.id,
+            title: t.title,
+            time: new Date(t.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          })));
+          setActiveThreadId(dbThreads[0].id);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadDBThreads();
+  }, []);
+
+  // 2. Fetch Messages for Active Thread from Neon DB
+  useEffect(() => {
+    async function loadMessages() {
+      if (!activeThreadId) return;
+      try {
+        const dbMsgs = await fetchThreadMessages(activeThreadId);
+        if (dbMsgs) {
+          const formatted: ChatMessage[] = dbMsgs.map(m => ({
+            id: m.id,
+            sender: m.sender as "user" | "assistant",
+            text: m.text,
+            agentId: m.agent_id,
+            agentWidget: m.agent_widget,
+            timestamp: m.timestamp
+          }));
+          setMessages(prev => ({ ...prev, [activeThreadId]: formatted }));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadMessages();
+  }, [activeThreadId]);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -253,74 +302,61 @@ export default function DashboardPage() {
 
   const currentMessages = messages[activeThreadId] || [];
 
+  // 3. Send Message, Save in DB & Trigger AWS Bedrock Agent
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!chatInput.trim() || isGenerating) return;
 
     const userText = chatInput.trim();
     setChatInput("");
-
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      sender: "user",
-      text: userText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => ({
-      ...prev,
-      [activeThreadId]: [...(prev[activeThreadId] || []), userMsg]
-    }));
-
     setIsGenerating(true);
 
     try {
-      // Direct Real-time Connection with FastAPI & AWS Bedrock Backend Agents
-      const response = await runAgentTask(userText, activeAgent.id);
+      await postChatMessage(activeThreadId, userText, activeAgent.id);
       
-      const replyMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        sender: "assistant",
-        agentId: activeAgent.id,
-        text: response.message || `[${activeAgent.name}] Processed: "${userText}"`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        agentWidget: {
-          type: response.type || activeAgent.id,
-          title: `${response.agent || activeAgent.name} // Execution Output`,
-          details: response.data || { input: userText }
-        }
-      };
-
-      setMessages(prev => ({
-        ...prev,
-        [activeThreadId]: [...(prev[activeThreadId] || []), replyMsg]
-      }));
+      const dbMsgs = await fetchThreadMessages(activeThreadId);
+      if (dbMsgs) {
+        const formatted: ChatMessage[] = dbMsgs.map(m => ({
+          id: m.id,
+          sender: m.sender as "user" | "assistant",
+          text: m.text,
+          agentId: m.agent_id,
+          agentWidget: m.agent_widget,
+          timestamp: m.timestamp
+        }));
+        setMessages(prev => ({ ...prev, [activeThreadId]: formatted }));
+      }
     } catch (err) {
-      const errorMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        sender: "assistant",
-        agentId: activeAgent.id,
-        text: `[${activeAgent.name}]: Executed task turn in character for: "${userText}".`,
+      console.error(err);
+      // Fallback local display
+      const fallbackMsg: ChatMessage = {
+        id: Date.now().toString(),
+        sender: "user",
+        text: userText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => ({
         ...prev,
-        [activeThreadId]: [...(prev[activeThreadId] || []), errorMsg]
+        [activeThreadId]: [...(prev[activeThreadId] || []), fallbackMsg]
       }));
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleSelectAgentForChat = (agent: AgentModel) => {
+  const handleSelectAgentForChat = async (agent: AgentModel) => {
     setActiveAgent(agent);
-    const newId = `thread-${Date.now()}`;
-    setThreads([{ id: newId, title: `${agent.name} Session`, time: "Just now" }, ...threads]);
-    setActiveThreadId(newId);
-    setMessages({
-      ...messages,
-      [newId]: []
-    });
+    try {
+      const newThread = await createThread(`${agent.name} Session`, agent.id);
+      setThreads(prev => [{ id: newThread.id, title: newThread.title, time: "Just now" }, ...prev]);
+      setActiveThreadId(newThread.id);
+      setMessages(prev => ({ ...prev, [newThread.id]: [] }));
+    } catch (err) {
+      const fallbackId = `thread-${Date.now()}`;
+      setThreads(prev => [{ id: fallbackId, title: `${agent.name} Session`, time: "Just now" }, ...prev]);
+      setActiveThreadId(fallbackId);
+      setMessages(prev => ({ ...prev, [fallbackId]: [] }));
+    }
     setActiveTab("chat");
   };
 
@@ -330,14 +366,18 @@ export default function DashboardPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleNewThread = () => {
-    const newId = `thread-${Date.now()}`;
-    setThreads([{ id: newId, title: "New Agent Conversation", time: "Just now" }, ...threads]);
-    setActiveThreadId(newId);
-    setMessages({
-      ...messages,
-      [newId]: []
-    });
+  const handleNewThread = async () => {
+    try {
+      const newThread = await createThread("New Agent Session", activeAgent.id);
+      setThreads(prev => [{ id: newThread.id, title: newThread.title, time: "Just now" }, ...prev]);
+      setActiveThreadId(newThread.id);
+      setMessages(prev => ({ ...prev, [newThread.id]: [] }));
+    } catch (err) {
+      const fallbackId = `thread-${Date.now()}`;
+      setThreads(prev => [{ id: fallbackId, title: "New Agent Session", time: "Just now" }, ...prev]);
+      setActiveThreadId(fallbackId);
+      setMessages(prev => ({ ...prev, [fallbackId]: [] }));
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -347,10 +387,10 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="h-screen bg-[#090B10] text-[#F5F5F7] flex overflow-hidden font-sans selection:bg-amber-500 selection:text-black">
+    <div className="h-screen bg-[#090814] text-[#F5F5F7] flex overflow-hidden font-sans selection:bg-amber-500 selection:text-black">
       
-      {/* 1. Left Sidebar */}
-      <aside className="w-68 bg-[#0D101A] border-r border-[#1E2435] flex flex-col justify-between p-3.5 shrink-0 hidden md:flex">
+      {/* 1. Left Sidebar (Teleport Theme Matched) */}
+      <aside className="w-68 bg-[#110E26]/80 backdrop-blur-2xl border-r border-[#231F42] flex flex-col justify-between p-3.5 shrink-0 hidden md:flex">
         
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2 pt-1">
@@ -362,12 +402,12 @@ export default function DashboardPage() {
           </div>
 
           {/* View Switcher: Chat vs Agent Usage Dashboard */}
-          <div className="p-1 rounded-xl bg-[#131724] border border-[#273048] flex items-center gap-1">
+          <div className="p-1 rounded-xl bg-[#1A1638] border border-[#2F2959] flex items-center gap-1">
             <button
               onClick={() => setActiveTab("chat")}
               className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === "chat" 
-                  ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-md" 
+                  ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-md font-extrabold" 
                   : "text-gray-400 hover:text-white"
               }`}
             >
@@ -378,7 +418,7 @@ export default function DashboardPage() {
               onClick={() => setActiveTab("dashboard")}
               className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === "dashboard" 
-                  ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-md" 
+                  ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-md font-extrabold" 
                   : "text-gray-400 hover:text-white"
               }`}
             >
@@ -389,7 +429,7 @@ export default function DashboardPage() {
 
           <button
             onClick={handleNewThread}
-            className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-[#171C2E] to-[#121626] border border-[#273048] text-white text-xs font-semibold hover:border-amber-500/60 transition-all flex items-center justify-between shadow-lg group"
+            className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-[#1E1940] to-[#151130] border border-[#352E63] text-white text-xs font-semibold hover:border-amber-500/60 transition-all flex items-center justify-between shadow-lg group"
           >
             <span className="flex items-center gap-2">
               <Plus className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
@@ -409,10 +449,11 @@ export default function DashboardPage() {
 
           {/* Threads List */}
           <div className="space-y-1">
-            <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider px-2 py-1 font-bold">
-              Recent Threads
+            <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider px-2 py-1 font-bold flex items-center justify-between">
+              <span>Persistent DB Threads</span>
+              <span className="text-amber-400">Synced</span>
             </div>
-            <div className="space-y-1 max-h-[42vh] overflow-y-auto scrollbar-none pr-1">
+            <div className="space-y-1 max-h-[44vh] overflow-y-auto scrollbar-none pr-1">
               {threads.map(t => {
                 const isActive = t.id === activeThreadId;
                 return (
@@ -424,7 +465,7 @@ export default function DashboardPage() {
                     }}
                     className={`w-full text-left py-2 px-3 rounded-lg text-xs transition-all flex items-center justify-between group ${
                       isActive 
-                        ? "bg-[#181E30] text-white font-semibold border border-amber-500/30 shadow-xs" 
+                        ? "bg-[#231D4A] text-white font-semibold border border-amber-500/40 shadow-md" 
                         : "text-gray-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
@@ -440,7 +481,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Sidebar Footer — User Session Status */}
-        <div className="pt-3 border-t border-[#1E2435] flex items-center justify-between text-xs text-gray-400">
+        <div className="pt-3 border-t border-[#231F42] flex items-center justify-between text-xs text-gray-400">
           <div className="flex items-center gap-2.5 truncate">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-black font-extrabold text-xs shadow-md shrink-0">
               {currentUser?.full_name ? currentUser.full_name.charAt(0).toUpperCase() : (currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : "O")}
@@ -461,16 +502,16 @@ export default function DashboardPage() {
       </aside>
 
       {/* 2. Main Workspace */}
-      <main className="flex-1 flex flex-col justify-between bg-[#090B10] relative overflow-hidden">
+      <main className="flex-1 flex flex-col justify-between bg-[#090814] relative overflow-hidden">
         
         {/* HEADER BAR */}
-        <header className="h-16 border-b border-[#1E2435] bg-[#0C0F18]/90 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
+        <header className="h-16 border-b border-[#231F42] bg-[#110E26]/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
           
           <div className="flex items-center gap-3">
             <div className="relative">
               <button
                 onClick={() => setIsAgentMenuOpen(!isAgentMenuOpen)}
-                className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#131724] border border-[#273048] text-xs font-bold text-white hover:border-amber-500/60 transition-all shadow-md group"
+                className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#171433] border border-[#302859] text-xs font-bold text-white hover:border-amber-500/60 transition-all shadow-md group"
               >
                 <div className={`p-1 rounded-lg ${activeAgent.color}`}>
                   <activeAgent.icon className="w-4 h-4" />
@@ -488,9 +529,9 @@ export default function DashboardPage() {
 
               {/* Agent Selection Dropdown Menu */}
               {isAgentMenuOpen && (
-                <div className="absolute top-12 left-0 w-84 sm:w-96 rounded-2xl bg-[#111522] border border-[#273048] p-3 shadow-2xl z-50 space-y-1.5 max-h-[70vh] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-12 left-0 w-84 sm:w-96 rounded-2xl bg-[#161233] border border-[#352E63] p-3 shadow-2xl z-50 space-y-1.5 max-h-[70vh] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider px-2 py-1 font-semibold flex items-center justify-between">
-                    <span>Select Agent Worker</span>
+                    <span>Select Active Agent Worker</span>
                     <span className="text-amber-400">10 Agents Online</span>
                   </div>
                   
@@ -503,7 +544,7 @@ export default function DashboardPage() {
                       }}
                       className={`w-full text-left p-2.5 rounded-xl transition-all flex items-start gap-3 ${
                         activeAgent.id === agent.id 
-                          ? "bg-[#1C2336] border border-amber-500/50 shadow-md" 
+                          ? "bg-[#251E4F] border border-amber-500/50 shadow-md" 
                           : "hover:bg-white/5 border border-transparent"
                       }`}
                     >
@@ -572,14 +613,14 @@ export default function DashboardPage() {
                       <div className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
                         msg.sender === "user"
                           ? "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-black font-medium rounded-tr-none"
-                          : "bg-[#121624] border border-[#232B40] text-gray-100 rounded-tl-none"
+                          : "bg-[#161233] border border-[#302859] text-gray-100 rounded-tl-none"
                       }`}>
                         <p className="whitespace-pre-wrap">{msg.text}</p>
                       </div>
 
                       {msg.agentWidget && (
-                        <div className="rounded-xl bg-[#0D101A] border border-amber-500/30 p-3.5 space-y-2 text-xs shadow-xl animate-in fade-in duration-300">
-                          <div className="flex items-center justify-between border-b border-[#1E2435] pb-2">
+                        <div className="rounded-xl bg-[#110E26] border border-amber-500/30 p-3.5 space-y-2 text-xs shadow-xl animate-in fade-in duration-300">
+                          <div className="flex items-center justify-between border-b border-[#231F42] pb-2">
                             <span className="font-mono text-amber-400 font-bold text-[11px] flex items-center gap-1.5">
                               <Terminal className="w-3.5 h-3.5 text-amber-400" />
                               {msg.agentWidget.title}
@@ -618,7 +659,7 @@ export default function DashboardPage() {
                     </div>
 
                     {msg.sender === "user" && (
-                      <div className="w-8 h-8 rounded-xl bg-[#232B40] border border-gray-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#251E4F] border border-purple-500/40 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">
                         <User className="w-4 h-4 text-amber-400" />
                       </div>
                     )}
@@ -627,9 +668,9 @@ export default function DashboardPage() {
               )}
 
               {isGenerating && (
-                <div className="flex gap-3 items-center text-xs text-amber-400 font-mono bg-[#121624] p-3 rounded-xl border border-amber-500/30 w-fit">
+                <div className="flex gap-3 items-center text-xs text-amber-400 font-mono bg-[#161233] p-3 rounded-xl border border-amber-500/30 w-fit">
                   <Runner color="yellow" />
-                  <span>AWS Bedrock Agent reasoning turns in progress...</span>
+                  <span>AWS Bedrock Agent reasoning & saving to database...</span>
                 </div>
               )}
 
@@ -639,17 +680,17 @@ export default function DashboardPage() {
         ) : (
           /* AGENT PLATFORM SELECTION & USAGE DASHBOARD */
           <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-6xl w-full mx-auto scrollbar-none">
-            <div className="flex items-center justify-between border-b border-[#1E2435] pb-4">
+            <div className="flex items-center justify-between border-b border-[#231F42] pb-4">
               <div>
                 <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-amber-400" />
-                  <span>Agent Platform Hub & Analytics</span>
+                  <span>Agent Hub & Usage Analytics</span>
                 </h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Select any active agent worker to inspect usage metrics or launch a direct chat thread.
+                  Inspect active agent workers, performance metrics & launch custom conversational sessions.
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-amber-400 bg-[#121624] px-3 py-1.5 rounded-xl border border-[#273048] font-mono">
+              <div className="flex items-center gap-2 text-xs text-amber-400 bg-[#161233] px-3 py-1.5 rounded-xl border border-[#302859] font-mono">
                 <PulseDot color="emerald" /> 10 Active Agent Workers Online
               </div>
             </div>
@@ -658,7 +699,7 @@ export default function DashboardPage() {
               {AGENT_MODELS.map(agent => (
                 <div 
                   key={agent.id}
-                  className="rounded-2xl bg-[#111522] border border-[#273048] p-4 flex flex-col justify-between space-y-4 hover:border-amber-500/50 transition-all shadow-xl group"
+                  className="rounded-2xl bg-[#14102E] border border-[#2D2654] p-4 flex flex-col justify-between space-y-4 hover:border-amber-500/50 transition-all shadow-xl group"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -680,7 +721,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Live Usage Metrics */}
-                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-[#090C14] border border-[#1E2435] text-[10px] font-mono">
+                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-[#0B091B] border border-[#231F42] text-[10px] font-mono">
                       <div>
                         <div className="text-gray-500 uppercase">Runs</div>
                         <div className="text-white font-bold">{agent.usageMetrics.totalRuns}</div>
@@ -698,7 +739,7 @@ export default function DashboardPage() {
 
                   <button
                     onClick={() => handleSelectAgentForChat(agent)}
-                    className="w-full py-2 px-3 rounded-xl bg-[#171C2E] border border-[#273048] text-white text-xs font-bold hover:bg-gradient-to-r hover:from-amber-500 hover:to-red-500 hover:text-black transition-all flex items-center justify-center gap-2 shadow-md"
+                    className="w-full py-2 px-3 rounded-xl bg-[#211B47] border border-[#3A316B] text-white text-xs font-bold hover:bg-gradient-to-r hover:from-amber-500 hover:to-red-500 hover:text-black transition-all flex items-center justify-center gap-2 shadow-md"
                   >
                     <span>Launch Chat with Agent</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -711,7 +752,7 @@ export default function DashboardPage() {
 
         {/* DOCKED INSTRUCTION COMMAND INPUT (When in Chat View) */}
         {activeTab === "chat" && (
-          <footer className="p-4 sm:p-6 bg-[#090B10] border-t border-[#1E2435] sticky bottom-0">
+          <footer className="p-4 sm:p-6 bg-[#090814] border-t border-[#231F42] sticky bottom-0">
             <div className="max-w-4xl mx-auto space-y-2.5">
               
               {/* Quick Agent Shortcut Pills */}
@@ -719,13 +760,13 @@ export default function DashboardPage() {
                 <span className="text-[10px] font-mono text-gray-500 uppercase font-bold shrink-0">Quick Actions:</span>
                 <button
                   onClick={() => setChatInput("Pitch CloudSuite workflow automation to an enterprise buyer")}
-                  className="px-2.5 py-1 rounded-lg bg-[#131724] border border-[#273048] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
+                  className="px-2.5 py-1 rounded-lg bg-[#161233] border border-[#302859] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
                 >
                   🎯 Pitch Product
                 </button>
                 <button
                   onClick={() => setChatInput("Address objection: 'Why should we trust 99.9% uptime SLA?'")}
-                  className="px-2.5 py-1 rounded-lg bg-[#131724] border border-[#273048] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
+                  className="px-2.5 py-1 rounded-lg bg-[#161233] border border-[#302859] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
                 >
                   🤝 Handle Objection
                 </button>
@@ -738,7 +779,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setChatInput("Create a 50-node enterprise customer rollout plan")}
-                  className="px-2.5 py-1 rounded-lg bg-[#131724] border border-[#273048] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
+                  className="px-2.5 py-1 rounded-lg bg-[#161233] border border-[#302859] text-gray-300 hover:text-amber-400 hover:border-amber-500/50 transition-all shrink-0 text-[11px]"
                 >
                   🗺 Rollout Plan
                 </button>
@@ -751,7 +792,7 @@ export default function DashboardPage() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder={activeAgent.placeholder}
-                  className="w-full py-3.5 pl-4 pr-12 rounded-2xl bg-[#121624] border border-[#273048] text-white text-xs sm:text-sm placeholder-gray-500 focus:outline-none focus:border-amber-500/60 transition-all shadow-inner"
+                  className="w-full py-3.5 pl-4 pr-12 rounded-2xl bg-[#161233] border border-[#302859] text-white text-xs sm:text-sm placeholder-gray-500 focus:outline-none focus:border-amber-500/60 transition-all shadow-inner"
                 />
                 <button
                   type="submit"
@@ -769,8 +810,8 @@ export default function DashboardPage() {
 
       {/* 4. LIVE NEURAL VOICE CALL MODAL INTERFACE */}
       {isCallActive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-2xl animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-3xl bg-[#0F1320] border border-amber-500/40 p-6 shadow-2xl text-center space-y-6 relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-2xl animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-[#120E2B] border border-amber-500/40 p-6 shadow-2xl text-center space-y-6 relative overflow-hidden">
             
             <div className="flex items-center justify-between text-xs font-mono text-gray-400">
               <span className="flex items-center gap-1.5 text-emerald-400">
@@ -781,7 +822,7 @@ export default function DashboardPage() {
 
             <div className="space-y-2">
               <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 p-1 shadow-[0_0_40px_rgba(255,138,0,0.4)] animate-pulse">
-                <div className="w-full h-full rounded-full bg-[#0F1320] flex items-center justify-center">
+                <div className="w-full h-full rounded-full bg-[#120E2B] flex items-center justify-center">
                   <PhoneCall className="w-8 h-8 text-amber-400" />
                 </div>
               </div>
@@ -799,7 +840,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Real-time Voice Transcript Streaming Box */}
-            <div className="p-3.5 rounded-2xl bg-[#090C14] border border-[#1E2435] text-left text-xs font-mono text-gray-300 space-y-1.5 max-h-32 overflow-y-auto scrollbar-none">
+            <div className="p-3.5 rounded-2xl bg-[#0A0819] border border-[#231F42] text-left text-xs font-mono text-gray-300 space-y-1.5 max-h-32 overflow-y-auto scrollbar-none">
               <p className="text-amber-400 font-bold">[Agent]: "Hi Sarah, calling from Kaiso Agent OS regarding outbound SDR automation."</p>
               <p className="text-gray-400">[Lead]: "We need automated lead qualification and calendar booking."</p>
               <p className="text-emerald-400 font-bold">[Agent]: "Demo scheduled for Thursday at 2:00 PM EST."</p>
@@ -810,7 +851,7 @@ export default function DashboardPage() {
               <button
                 onClick={() => setIsMuted(!isMuted)}
                 className={`p-3.5 rounded-full border transition-all ${
-                  isMuted ? "bg-red-500/20 border-red-500 text-red-400" : "bg-[#1B2236] border-[#2E3A59] text-white hover:text-amber-400"
+                  isMuted ? "bg-red-500/20 border-red-500 text-red-400" : "bg-[#251E4F] border-[#3B3078] text-white hover:text-amber-400"
                 }`}
               >
                 {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}

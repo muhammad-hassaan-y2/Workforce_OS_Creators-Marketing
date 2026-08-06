@@ -16,6 +16,30 @@ export interface AuthResponse {
   user: UserProfile;
 }
 
+export interface ThreadItem {
+  id: string;
+  title: string;
+  agent_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessageItem {
+  id: string;
+  thread_id: string;
+  sender: "user" | "assistant";
+  agent_id?: string;
+  text: string;
+  agent_widget?: any;
+  timestamp: string;
+  created_at: string;
+}
+
+function getAuthHeader(): Record<string, string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("kaiso_access_token") : null;
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+}
+
 export async function signupUser(email: string, password: string, fullName: string, role: string): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/signup`, {
     method: "POST",
@@ -61,13 +85,54 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
   return data;
 }
 
+export async function fetchThreads(): Promise<ThreadItem[]> {
+  const res = await fetch(`${API_BASE_URL}/threads`, {
+    headers: { ...getAuthHeader() }
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function createThread(title: string = "New Conversation", agentId: string = "mesh"): Promise<ThreadItem> {
+  const res = await fetch(`${API_BASE_URL}/threads`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader()
+    },
+    body: JSON.stringify({ title, agent_id: agentId })
+  });
+  if (!res.ok) throw new Error("Failed to create chat thread");
+  return res.json();
+}
+
+export async function fetchThreadMessages(threadId: string): Promise<ChatMessageItem[]> {
+  const res = await fetch(`${API_BASE_URL}/threads/${threadId}/messages`, {
+    headers: { ...getAuthHeader() }
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function postChatMessage(threadId: string, text: string, agentId: string = "mesh"): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/threads/${threadId}/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader()
+    },
+    body: JSON.stringify({ text, agent_id: agentId })
+  });
+  if (!res.ok) throw new Error("Failed to post message");
+  return res.json();
+}
+
 export async function runAgentTask(prompt: string, agentType: string = "mesh"): Promise<any> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("kaiso_access_token") : null;
   const res = await fetch(`${API_BASE_URL}/agents/run`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      ...getAuthHeader()
     },
     body: JSON.stringify({ prompt, agent_type: agentType })
   });
@@ -79,12 +144,11 @@ export async function runAgentTask(prompt: string, agentType: string = "mesh"): 
 }
 
 export async function runBedrockOrchestration(): Promise<any> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("kaiso_access_token") : null;
   const res = await fetch(`${API_BASE_URL}/bedrock/orchestrate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      ...getAuthHeader()
     }
   });
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
+from typing import Optional, List, Any
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -28,3 +28,33 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class ThreadCreate(BaseModel):
+    id: Optional[str] = None
+    title: Optional[str] = "New Conversation"
+    agent_id: Optional[str] = "mesh"
+
+class ChatMessageCreate(BaseModel):
+    text: str
+    agent_id: Optional[str] = "mesh"
+
+class ChatMessageResponse(BaseModel):
+    id: str
+    thread_id: str
+    sender: str
+    agent_id: Optional[str] = None
+    text: str
+    agent_widget: Optional[Any] = None
+    timestamp: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ThreadResponse(BaseModel):
+    id: str
+    title: str
+    agent_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

@@ -1,8 +1,11 @@
+import time
+import uuid
+from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from database import engine, Base, get_db
 import models
 import schemas
@@ -14,8 +17,8 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Kaiso Agent OS API",
-    description="Real-time FastAPI Backend with Neon PostgreSQL, AWS Bedrock Models SDK & Multi-Agent Personality Engine",
-    version="2.5.0"
+    description="Real-time FastAPI Backend with Neon PostgreSQL, Database Chat Thread Persistence & AWS Bedrock Models SDK",
+    version="2.6.0"
 )
 
 # Enable CORS for Next.js Frontend & CLI
@@ -41,6 +44,19 @@ class AgentRunRequest(BaseModel):
     prompt: str
     agent_type: Optional[str] = "mesh"
 
+def get_current_user_optional(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)) -> Optional[models.User]:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    token = authorization.split(" ")[1]
+    try:
+        payload = auth.jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+        email: str = payload.get("sub")
+        if email:
+            return db.query(models.User).filter(models.User.email == email).first()
+    except Exception:
+        pass
+    return None
+
 @app.get("/")
 def read_root():
     return {
@@ -53,7 +69,7 @@ def read_root():
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "healthy", "agents_online": 6, "aws_bedrock_ready": True}
+    return {"status": "healthy", "agents_online": 10, "database_persistence": True}
 
 @app.post("/api/auth/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
 def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -124,11 +140,108 @@ def get_current_user(authorization: Optional[str] = Header(None), db: Session = 
     
     return user
 
+# ---- Database Chat Session Threads & Message Persistence Endpoints ----
+
+@app.get("/api/threads", response_model=List[schemas.ThreadResponse])
+def get_user_threads(
+    user: Optional[models.User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    if user:
+        threads = db.query(models.Thread).filter(models.Thread.user_id == user.id).order_by(models.Thread.updated_at.desc()).all()
+    else:
+        threads = db.query(models.Thread).order_by(models.Thread.updated_at.desc()).limit(10).all()
+    return threads
+
+@app.post("/api/threads", response_model=schemas.ThreadResponse, status_code=status.HTTP_201_CREATED)
+def create_thread(
+    thread_data: schemas.ThreadCreate,
+    user: Optional[models.User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    thread_id = thread_data.id or f"thread-{uuid.uuid4().hex[:8]}"
+    new_thread = models.Thread(
+        id=thread_id,
+        user_id=user.id if user else None,
+        title=thread_data.title or "New Conversation",
+        agent_id=thread_data.agent_id or "mesh"
+    )
+    db.add(new_thread)
+    db.commit()
+    db.refresh(new_thread)
+    return new_thread
+
+@app.get("/api/threads/{thread_id}/messages", response_model=List[schemas.ChatMessageResponse])
+def get_thread_messages(thread_id: str, db: Session = Depends(get_db)):
+    msgs = db.query(models.ChatMessage).filter(models.ChatMessage.thread_id == thread_id).order_by(models.ChatMessage.created_at.asc()).all()
+    return msgs
+
+@app.post("/api/threads/{thread_id}/messages")
+def send_message_and_run_agent(
+    thread_id: str,
+    msg_data: schemas.ChatMessageCreate,
+    user: Optional[models.User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    thread = db.query(models.Thread).filter(models.Thread.id == thread_id).first()
+    if not thread:
+        thread = models.Thread(
+            id=thread_id,
+            user_id=user.id if user else None,
+            title=msg_data.text[:30] if msg_data.text else "New Conversation",
+            agent_id=msg_data.agent_id or "mesh"
+        )
+        db.add(thread)
+        db.commit()
+
+    now_str = datetime.now().strftime("%I:%M %p")
+
+    # 1. Save User Chat Message in Neon PostgreSQL DB
+    user_msg_id = f"msg-{uuid.uuid4().hex[:8]}"
+    user_chat_msg = models.ChatMessage(
+        id=user_msg_id,
+        thread_id=thread_id,
+        sender="user",
+        agent_id=msg_data.agent_id or "mesh",
+        text=msg_data.text,
+        timestamp=now_str
+    )
+    db.add(user_chat_msg)
+    db.commit()
+
+    # 2. Execute AWS Bedrock Agent Reasoning Turn
+    result = PythonAgentEngine.run_agent(prompt=msg_data.text, agent_type=msg_data.agent_id or "mesh")
+
+    # 3. Save Assistant Chat Message & Widget Data in Neon PostgreSQL DB
+    assistant_msg_id = f"msg-{uuid.uuid4().hex[:8]}"
+    assistant_text = result.get("message", f"Processed task: '{msg_data.text}'")
+    assistant_widget = {
+        "type": result.get("type", msg_data.agent_id or "mesh"),
+        "title": f"{result.get('agent', 'Agent Worker')} // Execution Output",
+        "details": result.get("data", {"prompt": msg_data.text})
+    }
+
+    assistant_chat_msg = models.ChatMessage(
+        id=assistant_msg_id,
+        thread_id=thread_id,
+        sender="assistant",
+        agent_id=msg_data.agent_id or "mesh",
+        text=assistant_text,
+        agent_widget=assistant_widget,
+        timestamp=now_str
+    )
+    db.add(assistant_chat_msg)
+    thread.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {
+        "status": "SUCCESS",
+        "user_message": user_chat_msg,
+        "assistant_message": assistant_chat_msg
+    }
+
 @app.post("/api/agents/run")
 def run_agent_task(request: AgentRunRequest):
-    """
-    Executes Python Agent Worker for CLI or Frontend requests
-    """
     result = PythonAgentEngine.run_agent(prompt=request.prompt, agent_type=request.agent_type or "mesh")
     return result
 
@@ -149,10 +262,6 @@ def list_active_agents():
 
 @app.post("/api/bedrock/orchestrate")
 def trigger_full_orchestration():
-    """
-    Triggers end-to-end multi-agent orchestration across AWS Bedrock agents:
-    Seed brand memory -> generate concept -> sales pitch -> objection handling -> brand consistency check -> PM plan -> PM conflict scan.
-    """
     result = PythonAgentEngine.run_full_orchestration()
     return {
         "status": "SUCCESS",
