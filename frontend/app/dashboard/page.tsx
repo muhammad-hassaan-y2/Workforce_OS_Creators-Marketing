@@ -163,31 +163,7 @@ export default function DashboardPage() {
   ]);
 
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({
-    "thread-1": [
-      {
-        id: "msg-1",
-        sender: "assistant",
-        agentId: "mesh",
-        text: "Kaiso Agent OS initialized. AWS Bedrock Boto3 SDK & 6-Agent Personality Engine are online (Jordan, ObjectionHandler, Archive, Forge, Atlas, Warden).",
-        timestamp: "11:58 AM",
-        agentWidget: {
-          type: "mesh",
-          title: "AWS Bedrock Multi-Agent System // Operational Status",
-          details: {
-            region: "us-east-1 (Bedrock Runtime)",
-            database: "Neon PostgreSQL Connected",
-            agents: [
-              "Jordan (The Closer // B2B Sales)",
-              "ObjectionHandler (The Diplomat // Objection Reframer)",
-              "Archive (The Brand Guardian // Institutional Memory)",
-              "Forge (The Casting Director // Persona Engine)",
-              "Atlas (The Strategist // PM Planning)",
-              "Warden (The Auditor // Conflict Detection)"
-            ]
-          }
-        }
-      }
-    ]
+    "thread-1": []
   });
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -319,15 +295,7 @@ export default function DashboardPage() {
     setActiveThreadId(newId);
     setMessages({
       ...messages,
-      [newId]: [
-        {
-          id: Date.now().toString(),
-          sender: "assistant",
-          agentId: activeAgent.id,
-          text: `Active Agent: ${activeAgent.name}. Type instructions below or select another agent from the top selector.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]
+      [newId]: []
     });
   };
 
@@ -357,33 +325,12 @@ export default function DashboardPage() {
             <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono">⌘N</span>
           </button>
 
-          {/* AWS Bedrock Telemetry Box */}
-          <div className="p-3 rounded-xl bg-[#090C14] border border-amber-500/30 text-xs space-y-2 shadow-inner">
-            <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider font-bold flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <PulseDot color="emerald" /> AWS Bedrock Engine
-              </span>
-              <span>us-east-1</span>
-            </div>
-            <p className="text-[11px] text-gray-300 leading-tight">
-              6 Persona Agents online (Sales, Objection, Brand, PM).
-            </p>
-            <button
-              onClick={handleTriggerOrchestration}
-              disabled={isOrchestrating}
-              className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-red-500 text-black text-xs font-extrabold hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-            >
-              {isOrchestrating ? <Runner color="gradient" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
-              <span>{isOrchestrating ? "Orchestrating..." : "Run 6-Agent Orchestration"}</span>
-            </button>
-          </div>
-
           {/* Threads List */}
           <div className="space-y-1">
             <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider px-2 py-1 font-bold">
               Recent Threads
             </div>
-            <div className="space-y-1 max-h-[38vh] overflow-y-auto scrollbar-none pr-1">
+            <div className="space-y-1 max-h-[48vh] overflow-y-auto scrollbar-none pr-1">
               {threads.map(t => {
                 const isActive = t.id === activeThreadId;
                 return (
@@ -407,7 +354,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Sidebar Footer — User Session & Connection Status */}
+        {/* Sidebar Footer — User Session Status */}
         <div className="pt-3 border-t border-[#1E2435] flex items-center justify-between text-xs text-gray-400">
           <div className="flex items-center gap-2.5 truncate">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-black font-extrabold text-xs shadow-md shrink-0">
@@ -419,7 +366,7 @@ export default function DashboardPage() {
               </div>
               <div className="text-[9px] font-mono text-amber-400 mt-1 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="uppercase font-bold">{currentUser?.role || "CREATOR"}</span> &bull; <span>FastAPI & Bedrock Linked</span>
+                <span className="uppercase font-bold">{currentUser?.role || "CREATOR"}</span>
               </div>
             </div>
           </div>
