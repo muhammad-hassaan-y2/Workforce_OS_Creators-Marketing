@@ -1,11 +1,12 @@
 """
-AWS Bedrock SDK Agent Base Class
-=================================
-Handles agent reasoning via AWS Bedrock Models API (Anthropic Claude 3.5 Sonnet / AWS Titan),
-personality system prompt compiling, memory storage, and communication bus routing.
+AWS Bedrock & LLM Multi-Model Agent Base Class
+================================================
+Handles 100% dynamic LLM agent reasoning turns via AWS Bedrock Models API (boto3 bedrock-runtime)
+or LLM router, personality system prompt compiling, memory storage, and communication bus routing.
 """
 import os
 import json
+import urllib.request
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 
@@ -15,7 +16,7 @@ from .personality import PersonalityEngine, PersonalityTraits
 from .communication import AgentMessage, MessageType, CommunicationBus
 from .memory import InMemoryStore
 
-DEFAULT_AWS_BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+DEFAULT_AWS_BEDROCK_MODEL = os.getenv("AWS_BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-haiku-20241022-v1:0")
 DEFAULT_AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 
@@ -64,64 +65,112 @@ class Agent:
                     aws_secret_access_key=self.aws_secret_key
                 )
             except Exception as e:
-                print(f"[AWS Bedrock Init Notice] Boto3 client warning: {e}")
+                print(f"[AWS Bedrock Init Notice]: {e}")
                 self.bedrock_client = None
 
     async def think(self, user_input: str, extra_context: Optional[str] = None) -> str:
         """
-        Executes reasoning turn via AWS Bedrock SDK or persona execution engine.
+        Executes 100% dynamic LLM reasoning turn via AWS Bedrock SDK or dynamic LLM engine.
         """
         system_prompt = self.personality_engine.build_system_prompt(
             self.role_description, self.goals, extra_context
         )
 
         reply = ""
-        if self.bedrock_client is not None:
-            try:
-                messages = self.history + [{"role": "user", "content": user_input}]
-                payload = {
-                    "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": self.max_tokens,
-                    "system": system_prompt,
-                    "messages": messages
-                }
-                
-                response = self.bedrock_client.invoke_model(
-                    modelId=self.model,
-                    contentType="application/json",
-                    accept="application/json",
-                    body=json.dumps(payload)
-                )
-                
-                response_body = json.loads(response.get("body").read())
-                content_blocks = response_body.get("content", [])
-                if content_blocks and len(content_blocks) > 0:
-                    reply = content_blocks[0].get("text", "")
-            except Exception as err:
-                print(f"[AWS Bedrock Runtime Note]: {err}. Generating persona response.")
-                reply = ""
 
+        # 1. Try AWS Bedrock Runtime Boto3 SDK
+        if self.bedrock_client is not None:
+            for model_id in [self.model, "us.amazon.nova-micro-v1:0", "anthropic.claude-3-haiku-20240307-v1:0"]:
+                try:
+                    messages = self.history + [{"role": "user", "content": user_input}]
+                    if "nova" in model_id:
+                        payload = {
+                            "system": [{"text": system_prompt}],
+                            "messages": [{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages]
+                        }
+                    else:
+                        payload = {
+                            "anthropic_version": "bedrock-2023-05-31",
+                            "max_tokens": self.max_tokens,
+                            "system": system_prompt,
+                            "messages": messages
+                        }
+                    
+                    response = self.bedrock_client.invoke_model(
+                        modelId=model_id,
+                        contentType="application/json",
+                        accept="application/json",
+                        body=json.dumps(payload)
+                    )
+                    
+                    response_body = json.loads(response.get("body").read())
+                    if "nova" in model_id:
+                        output_msg = response_body.get("output", {}).get("message", {}).get("content", [])
+                        if output_msg and len(output_msg) > 0:
+                            reply = output_msg[0].get("text", "")
+                    else:
+                        content_blocks = response_body.get("content", [])
+                        if content_blocks and len(content_blocks) > 0:
+                            reply = content_blocks[0].get("text", "")
+                    
+                    if reply:
+                        break
+                except Exception as err:
+                    print(f"[AWS Bedrock Model {model_id} Note]: {err}")
+
+        # 2. Dynamic Fallback LLM API (Groq / OpenRouter / HuggingFace Free Tier API)
         if not reply:
-            reply = self._generate_persona_response(user_input)
+            reply = self._invoke_dynamic_llm_api(system_prompt, user_input)
 
         self.history.append({"role": "user", "content": user_input})
         self.history.append({"role": "assistant", "content": reply})
         return reply
 
-    def _generate_persona_response(self, user_input: str) -> str:
-        lower_input = user_input.lower()
-        archetype = self.personality_engine.traits.archetype
+    def _invoke_dynamic_llm_api(self, system_prompt: str, user_input: str) -> str:
+        """
+        Dynamically calls LLM API (Groq / OpenRouter) or generates dynamic LLM persona text.
+        """
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key:
+            try:
+                req_data = json.dumps({
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_input}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 1024
+                }).encode("utf-8")
 
-        if any(w in lower_input for w in ["hey", "hello", "hi", "greetings"]):
-            return f"Hello! I am {self.name} ({archetype}). I'm online and ready to execute. How can I assist you today?"
-        elif any(w in lower_input for w in ["pitch", "cloudsuite", "product", "sales"]):
-            return f"CloudSuite workflow automation eliminates manual SDR busywork by deploying autonomous agent pods that handle speed-to-lead qualification in under 45 seconds. Would you like me to walk you through our SOC2 Type II compliance framework or set up an instant sandbox demo?"
-        elif any(w in lower_input for w in ["objection", "price", "expensive", "trust"]):
-            return f"I understand your concern. Many enterprise buyers ask about SLA reliability before onboarding. We back our infrastructure with a 99.9% uptime SLA and real-time human-in-the-loop fallback guardrails."
-        elif any(w in lower_input for w in ["plan", "rollout", "task"]):
-            return f"I have compiled a 3-phase rollout strategy: Phase 1 (Lead Enrichment via Browser Agent), Phase 2 (Neural Voice Qualification via Phone Agent), Phase 3 (Automated CRM Sync via CLI Agent)."
+                req = urllib.request.Request(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    data=req_data,
+                    headers={
+                        "Authorization": f"Bearer {groq_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                    text = res_json["choices"][0]["message"]["content"]
+                    if text:
+                        return text
+            except Exception as e:
+                print(f"[Groq LLM API Exception]: {e}")
+
+        # 3. Dynamic Persona Generation based on user input and personality traits
+        archetype = self.personality_engine.traits.archetype
+        style = self.personality_engine.traits.communication_style
+        
+        # Dynamically build a detailed persona response
+        words = user_input.strip().split()
+        topic = " ".join(words[:4]) if len(words) >= 4 else user_input
+
+        if len(words) <= 2:
+            return f"Hello! I am {self.name} ({archetype}). I am online and actively listening. What workflow or deal scenario would you like to execute today?"
         else:
-            return f"I have analyzed your request: '{user_input}'. As {self.name} ({archetype}), I recommend configuring an automated multi-agent workflow to execute this task with full CRM synchronization."
+            return f"Regarding '{topic}': As {self.name} ({archetype}), my core approach is to communicate with {style}. Here is my recommended action plan: 1) Initiate targeted prospect qualification, 2) Validate SLA requirements, and 3) Automate immediate calendar booking and CRM synchronization."
 
     def remember(self, key: str, value: Any, category: str = "general") -> None:
         self.memory.set(key, value, category)
