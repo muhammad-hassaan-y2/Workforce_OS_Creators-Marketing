@@ -76,37 +76,37 @@ interface AgentModel {
 const AGENT_MODELS: AgentModel[] = [
   {
     id: "mesh",
-    name: "AWS Bedrock Multi-Agent Mesh",
-    badge: "All Agents Synchronized",
+    name: "Kaiso Multi-Agent Core",
+    badge: "Autonomous Workforce Mesh",
     tagline: "Coordinates Sales, Objection Handling, Brand Memory, PM Planner & Auditor in parallel.",
     icon: Cpu,
     color: "bg-gradient-to-r from-amber-500 to-red-500 text-white font-bold",
     accentBorder: "border-amber-500/60",
-    placeholder: "Ask AWS Bedrock Multi-Agent Mesh or command all specialized agents...",
+    placeholder: "Type a message...",
     category: "orchestration",
     usageMetrics: { totalRuns: 1240, avgLatency: "0.88s", successRate: "99.8%" }
   },
   {
     id: "sales",
     name: "Jordan // B2B Sales Agent",
-    badge: "The Closer (AWS Bedrock)",
+    badge: "The Closer",
     tagline: "Qualifies B2B leads, pitches product value & drives deals toward demos/contracts.",
     icon: Briefcase,
     color: "bg-amber-500 text-black font-bold",
     accentBorder: "border-amber-400/60",
-    placeholder: "Tell Jordan to pitch or qualify a lead (e.g. 'Pitch CloudSuite to mid-market ops director')...",
+    placeholder: "Type a message...",
     category: "sales",
     usageMetrics: { totalRuns: 450, avgLatency: "0.29s", successRate: "98.5%" }
   },
   {
     id: "objection",
     name: "ObjectionHandler // Diplomat Agent",
-    badge: "Reframer (AWS Bedrock)",
+    badge: "Reframer",
     tagline: "Diagnoses real objections, reframes with verified facts & empathy.",
     icon: ShieldCheck,
     color: "bg-orange-500 text-white font-bold",
     accentBorder: "border-orange-500/60",
-    placeholder: "Ask ObjectionHandler to resolve buyer doubts (e.g. 'Why should we trust 99.9% SLA?')...",
+    placeholder: "Type a message...",
     category: "sales",
     usageMetrics: { totalRuns: 280, avgLatency: "0.31s", successRate: "97.2%" }
   },
@@ -118,7 +118,7 @@ const AGENT_MODELS: AgentModel[] = [
     icon: PhoneCall,
     color: "bg-yellow-400 text-black font-bold",
     accentBorder: "border-yellow-400/60",
-    placeholder: "Tell Voice Agent who to call or qualify (e.g. 'Dial Sarah Jenkins at SaaSify')...",
+    placeholder: "Type a message...",
     category: "sales",
     usageMetrics: { totalRuns: 310, avgLatency: "0.28s", successRate: "99.1%" }
   },
@@ -130,7 +130,7 @@ const AGENT_MODELS: AgentModel[] = [
     icon: Sparkles,
     color: "bg-purple-600 text-white font-bold",
     accentBorder: "border-purple-500/60",
-    placeholder: "Ask Archive to check consistency (e.g. 'Does this email violate our brand tone?')...",
+    placeholder: "Type a message...",
     category: "orchestration",
     usageMetrics: { totalRuns: 620, avgLatency: "0.24s", successRate: "100%" }
   },
@@ -889,7 +889,7 @@ export default function DashboardPage() {
                       }
                     }}
                     rows={1}
-                    placeholder={`Ask ${activeAgent.name} to pitch product, handle objections, or automate workflows... (Shift + Enter for new line)`}
+                    placeholder="Type a message..."
                     className="w-full py-3.5 pl-4 pr-12 rounded-2xl bg-[#161233] border border-[#302859] text-white text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:border-amber-500/60 transition-all shadow-inner resize-none min-h-[48px] max-h-36 scrollbar-none"
                   />
                   <button
