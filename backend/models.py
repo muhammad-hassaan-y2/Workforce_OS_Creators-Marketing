@@ -42,3 +42,18 @@ class ChatMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     thread = relationship("Thread", back_populates="messages")
+
+class AgentPersona(Base):
+    __tablename__ = "agent_personas"
+
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    archetype = Column(String, nullable=False) # e.g. "The Closer", "The Diplomat"
+    role_description = Column(Text, nullable=False)
+    communication_style = Column(Text, nullable=False)
+    traits = Column(JSON, default=dict) # {"assertiveness": 0.8, "empathy": 0.9}
+    core_values = Column(JSON, default=list) # ["Win-win outcomes"]
+    speech_patterns = Column(JSON, default=list) # ["Here's what I suggest"]
+    guardrails = Column(JSON, default=list) # ["Never invent false claims"]
+    goals = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.utcnow)

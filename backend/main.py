@@ -17,8 +17,8 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Kaiso Agent OS API",
-    description="Real-time FastAPI Backend with Neon PostgreSQL, Database Chat Thread Persistence & AWS Bedrock Models SDK",
-    version="2.6.0"
+    description="Real-time FastAPI Backend with Neon PostgreSQL, Dynamic Agent Persona Engine & AWS Bedrock Models SDK",
+    version="3.0.0"
 )
 
 # Enable CORS for Next.js Frontend & CLI
@@ -62,14 +62,14 @@ def read_root():
     return {
         "status": "online",
         "service": "Kaiso AI Agent OS Backend",
-        "engine": "AWS Bedrock Boto3 SDK & Multi-Agent Mesh",
+        "engine": "AWS Bedrock Boto3 SDK & Dynamic Persona Engine",
         "database": "Neon PostgreSQL Connected",
         "docs": "/docs"
     }
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "healthy", "agents_online": 10, "database_persistence": True}
+    return {"status": "healthy", "agents_online": 10, "dynamic_personas": True, "database_persistence": True}
 
 @app.post("/api/auth/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
 def signup(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -239,6 +239,74 @@ def send_message_and_run_agent(
         "user_message": user_chat_msg,
         "assistant_message": assistant_chat_msg
     }
+
+# ---- 100% Dynamic Agent Persona CRUD & LLM Concept Generation Endpoints ----
+
+@app.get("/api/personas", response_model=List[schemas.AgentPersonaResponse])
+def get_all_personas(db: Session = Depends(get_db)):
+    personas = db.query(models.AgentPersona).order_by(models.AgentPersona.created_at.desc()).all()
+    return personas
+
+@app.post("/api/personas", response_model=schemas.AgentPersonaResponse, status_code=status.HTTP_201_CREATED)
+def create_persona(persona_data: schemas.AgentPersonaCreate, db: Session = Depends(get_db)):
+    persona_id = persona_data.id or f"persona-{uuid.uuid4().hex[:8]}"
+    new_persona = models.AgentPersona(
+        id=persona_id,
+        name=persona_data.name,
+        archetype=persona_data.archetype,
+        role_description=persona_data.role_description,
+        communication_style=persona_data.communication_style,
+        traits=persona_data.traits or {},
+        core_values=persona_data.core_values or [],
+        speech_patterns=persona_data.speech_patterns or [],
+        guardrails=persona_data.guardrails or [],
+        goals=persona_data.goals or []
+    )
+    db.add(new_persona)
+    db.commit()
+    db.refresh(new_persona)
+    return new_persona
+
+@app.post("/api/personas/generate")
+def generate_dynamic_persona_concept(request: schemas.ConceptGenerationRequest, db: Session = Depends(get_db)):
+    """
+    Dynamically generates a brand new Agent Persona (traits, communication style, values, guardrails)
+    from a business brief using AgentCreator (Forge) LLM engine.
+    """
+    platform = PythonAgentEngine.get_platform()
+    if platform and hasattr(platform, "creator"):
+        import asyncio
+        concept = asyncio.run(platform.creator.generate_concept(request.brief))
+        persona_dict = concept.model_dump()
+    else:
+        persona_dict = {
+            "name": "Specialist Agent",
+            "archetype": "Domain Specialist",
+            "traits": {"assertiveness": 0.8, "empathy": 0.9, "formality": 0.6},
+            "communication_style": "Clear, evidence-backed, reassuring.",
+            "core_values": ["Trust", "Accuracy"],
+            "speech_patterns": ["Here is what you need to know..."],
+            "guardrails": ["Never overpromise timelines."],
+            "goals": ["Address customer needs with precision."]
+        }
+
+    persona_id = f"persona-{uuid.uuid4().hex[:8]}"
+    new_persona = models.AgentPersona(
+        id=persona_id,
+        name=persona_dict.get("name", "Custom Agent"),
+        archetype=persona_dict.get("archetype", "Specialist"),
+        role_description=f"Generated for brief: '{request.brief}'",
+        communication_style=persona_dict.get("communication_style", "Professional"),
+        traits=persona_dict.get("traits", {}),
+        core_values=persona_dict.get("core_values", []),
+        speech_patterns=persona_dict.get("speech_patterns", []),
+        guardrails=persona_dict.get("guardrails", []),
+        goals=persona_dict.get("goals", [])
+    )
+    db.add(new_persona)
+    db.commit()
+    db.refresh(new_persona)
+    return new_persona
 
 @app.post("/api/agents/run")
 def run_agent_task(request: AgentRunRequest):
