@@ -352,6 +352,41 @@ def trigger_full_orchestration():
     }
 
 # -------------------------------------------------------------------
+# AWS S3 BUCKET INTEGRATION ENDPOINTS (workforce-os-2026)
+# -------------------------------------------------------------------
+from s3_service import s3_service
+
+@app.get("/api/s3/files")
+def list_s3_files(prefix: Optional[str] = ""):
+    files = s3_service.list_objects(prefix=prefix or "")
+    return {
+        "status": "SUCCESS",
+        "bucket": "workforce-os-2026",
+        "region": "us-east-1",
+        "count": len(files),
+        "files": files
+    }
+
+@app.post("/api/s3/upload")
+def upload_s3_file(payload: dict):
+    file_name = payload.get("file_name", "sample_asset.mp4")
+    folder = payload.get("folder", "video-renders")
+    content = payload.get("content", "Sample media asset bytes").encode("utf-8")
+    
+    result = s3_service.upload_file_bytes(content, file_name, folder)
+    return result
+
+@app.get("/api/s3/presigned_url")
+def get_s3_presigned_url(key: str):
+    url = s3_service.generate_presigned_url(key)
+    return {
+        "status": "SUCCESS",
+        "bucket": "workforce-os-2026",
+        "key": key,
+        "presigned_url": url
+    }
+
+# -------------------------------------------------------------------
 # ENTERPRISE DOMAIN REST ENDPOINTS (Leads, Campaigns, Analytics, etc.)
 # -------------------------------------------------------------------
 
