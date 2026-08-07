@@ -6,14 +6,15 @@ use crossterm::{
 };
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders, Paragraph},
     Terminal,
 };
 use std::{error::Error, io};
+use std::time::Duration;
 
 mod mcp_client;
 mod parser;
+mod db;
+mod ui;
 
 /// OpenClaw CLI
 #[derive(Parser, Debug)]
@@ -56,32 +57,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match &cli.command {
         Some(Commands::Agent { agent_command }) => {
-            // Only connect to MCP if we are running an agent subcommand
             let mcp = mcp_client::McpClient::new()?;
-            
             match agent_command {
                 AgentCommands::List => {
-                    println!("Fetching agents via CockroachDB MCP Server...");
+                    println!("Fetching agents...");
                     match mcp.list_agents().await {
                         Ok(agents) => {
-                            if agents.is_empty() {
-                                println!("No agents found or tools returned empty array.");
-                            } else {
-                                for agent in agents {
-                                    println!("- {}", agent);
-                                }
-                            }
+                            for agent in agents { println!("- {}", agent); }
                         }
                         Err(e) => println!("Error: {}", e),
                     }
                 }
                 AgentCommands::Inspect { id } => {
-                    println!("Inspecting agent {} via MCP Server...", id);
                     match mcp.inspect_agent(id).await {
-                        Ok(agent) => {
-                            println!("Agent Profile:");
-                            println!("{}", serde_json::to_string_pretty(&agent)?);
-                        }
+                        Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
                         Err(e) => println!("Error: {}", e),
                     }
                 }
@@ -89,8 +78,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
         Some(Commands::Query { text }) => {
             let query_str = text.join(" ");
-            println!("Parsing natural language query: '{}'", query_str);
-            
             let p = parser::QueryParser::new();
             match p.parse(&query_str) {
                 parser::Intent::ListAgents => {
@@ -113,31 +100,75 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
                 parser::Intent::Unknown(text) => {
                     println!("=> Intent unknown. The parser doesn't know how to handle: '{}'", text);
-                    println!("(Try something like 'list agents' or 'inspect <id>')");
                 }
             }
         },
         None => {
             // Start the main TUI dashboard if no subcommands provided
-            run_tui().await?;
+            let db_client = db::DbClient::new().await?;
+            run_tui(db_client).await?;
         }
     }
 
     Ok(())
 }
 
-async fn run_tui() -> Result<(), Box<dyn Error>> {
-    // setup terminal
+async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // run app
-    let res = run_app(&mut terminal).await;
+    let mut state = ui::AppState::new();
 
-    // restore terminal
+    // Initial load of agents
+    if let Ok(agents) = db_client.list_agents().await {
+        state.agents = agents;
+        state.agent_list_state.select(if state.agents.is_empty() { None } else { Some(0) });
+    }
+    state.loading = false;
+    
+    // load memories for the initially selected agent
+    if let Some(agent) = state.selected_agent() {
+        if let Ok(mems) = db_client.get_memories_for_agent(agent.id).await {
+            state.selected_memories = mems;
+        }
+    }
+
+    let mut last_selected_id = state.selected_agent().map(|a| a.id);
+
+    loop {
+        terminal.draw(|f| ui::draw_ui(f, &mut state))?;
+
+        // non-blocking event poll to keep UI responsive and allow async fetches
+        if event::poll(Duration::from_millis(50))? {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char('q') => break,
+                    KeyCode::Down | KeyCode::Char('j') => state.next(),
+                    KeyCode::Up | KeyCode::Char('k') => state.previous(),
+                    _ => {}
+                }
+            }
+        }
+
+        // if the selection changed, fetch the memories for the new agent asynchronously
+        let current_selected_id = state.selected_agent().map(|a| a.id);
+        if current_selected_id != last_selected_id {
+            if let Some(id) = current_selected_id {
+                state.loading = true;
+                terminal.draw(|f| ui::draw_ui(f, &mut state))?;
+                
+                if let Ok(mems) = db_client.get_memories_for_agent(id).await {
+                    state.selected_memories = mems;
+                }
+                state.loading = false;
+            }
+            last_selected_id = current_selected_id;
+        }
+    }
+
     disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
@@ -146,38 +177,5 @@ async fn run_tui() -> Result<(), Box<dyn Error>> {
     )?;
     terminal.show_cursor()?;
 
-    if let Err(err) = res {
-        println!("{:?}", err)
-    }
-
     Ok(())
-}
-
-async fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> 
-where
-    io::Error: From<<B as Backend>::Error>,
-{
-    loop {
-        terminal.draw(|f| ui(f))?;
-
-        if event::poll(std::time::Duration::from_millis(50))? {
-            if let Event::Key(key) = event::read()? {
-                if let KeyCode::Char('q') = key.code {
-                    return Ok(());
-                }
-            }
-        }
-    }
-}
-
-fn ui(f: &mut ratatui::Frame) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([Constraint::Percentage(100)].as_ref())
-        .split(f.area());
-
-    let block = Block::default().title("OpenClaw TUI Dashboard (Press 'q' to quit)").borders(Borders::ALL);
-    let paragraph = Paragraph::new("Welcome to the OpenClaw Dashboard! (MCP Integration pending for TUI)").block(block);
-    f.render_widget(paragraph, chunks[0]);
 }
