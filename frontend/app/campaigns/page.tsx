@@ -8,12 +8,10 @@ const PHASES = ["Phase 1: Setup", "Phase 2: Execution", "Phase 3: Review"];
 
 export default function CampaignsPage() {
   const [tasks, setTasks] = useState<any[]>([]);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchCampaigns().then((data) => {
-      setCampaigns(data.campaigns || []);
       setTasks(data.tasks || []);
       setLoading(false);
     });
@@ -21,7 +19,6 @@ export default function CampaignsPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0D14] text-white p-6 space-y-6">
-      {/* Header Bar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">

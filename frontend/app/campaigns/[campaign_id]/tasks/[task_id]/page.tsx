@@ -4,9 +4,10 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { fetchCopyReview, postCopyAction } from "@/lib/api";
 
-export default function TaskDetailPage({ params }: { params: Promise<{ id: string; taskId: string }> }) {
+export default function TaskDetailPage({ params }: { params: Promise<{ campaign_id: string; task_id: string }> }) {
   const resolvedParams = use(params);
-  const taskId = resolvedParams.taskId || "task-001";
+  const campaignId = resolvedParams.campaign_id || "camp-001";
+  const taskId = resolvedParams.task_id || "task-001";
 
   const [review, setReview] = useState<any>(null);
   const [note, setNote] = useState("");
@@ -40,7 +41,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
             <Link href="/dashboard" className="hover:text-cyan-400">Dashboard</Link>
             <span>/</span>
-            <Link href="/campaigns" className="hover:text-cyan-400">Campaigns</Link>
+            <Link href="/campaigns" className="hover:text-cyan-400">Campaigns ({campaignId})</Link>
             <span>/</span>
             <span className="text-white font-medium">Task #{taskId}</span>
           </div>
