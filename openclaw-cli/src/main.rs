@@ -144,11 +144,13 @@ async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
         // non-blocking event poll to keep UI responsive and allow async fetches
         if event::poll(Duration::from_millis(50))? {
             if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => break,
-                    KeyCode::Down | KeyCode::Char('j') => state.next(),
-                    KeyCode::Up | KeyCode::Char('k') => state.previous(),
-                    _ => {}
+                if key.kind == crossterm::event::KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => break,
+                        KeyCode::Down | KeyCode::Char('j') => state.next(),
+                        KeyCode::Up | KeyCode::Char('k') => state.previous(),
+                        _ => {}
+                    }
                 }
             }
         }
