@@ -81,7 +81,16 @@ class Agent:
 
         llm_errors = []
 
-        # 1. Attempt AWS Bedrock Bearer Token API Invocation (Mantle / Bedrock API Key)
+        # 1. Attempt Live Google Gemini LLM API Invocation
+        gemini_reply, gemini_err = self._try_gemini_llm_api(system_prompt, user_input)
+        if gemini_reply:
+            self.history.append({"role": "user", "content": user_input})
+            self.history.append({"role": "assistant", "content": gemini_reply})
+            return gemini_reply
+        elif gemini_err:
+            llm_errors.append(f"Gemini API: {gemini_err}")
+
+        # 2. Attempt AWS Bedrock Bearer Token API Invocation (Mantle / Bedrock API Key)
         bedrock_api_key = os.getenv("AWS_BEARER_TOKEN_BEDROCK") or os.getenv("AWS_BEDROCK_API_KEY")
         if bedrock_api_key:
             for model_id in [self.model, "us.amazon.nova-micro-v1:0", "us.amazon.nova-lite-v1:0"]:
