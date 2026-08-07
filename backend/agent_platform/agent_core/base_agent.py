@@ -91,7 +91,7 @@ class Agent:
             llm_errors.append(f"Gemini API: {gemini_err}")
 
         # 2. Attempt AWS Bedrock Bearer Token API Invocation (Mantle / Bedrock API Key)
-        bedrock_api_key = os.getenv("AWS_BEDROCK_API_KEY")
+        bedrock_api_key = os.getenv("AWS_BEARER_TOKEN_BEDROCK") or os.getenv("AWS_BEDROCK_API_KEY")
         if bedrock_api_key:
             for model_id in [self.model, "us.amazon.nova-micro-v1:0", "us.amazon.nova-lite-v1:0"]:
                 try:
@@ -124,12 +124,29 @@ class Agent:
                 except Exception as e:
                     llm_errors.append(f"Bedrock Bearer ({model_id}): {e}")
 
-        # 3. Attempt Live AWS Bedrock Runtime Boto3 Client Invocation
+        # 3. Attempt Live AWS Bedrock Runtime Boto3 Client Invocation (converse() and invoke_model())
         if self.bedrock_client is not None:
-            candidate_models = [self.model, "us.amazon.nova-micro-v1:0"]
+            candidate_models = [self.model, "arn:aws:bedrock:us-east-1:537124945123:inference-profile/global.amazon.nova-2-lite-v1:0", "us.amazon.nova-micro-v1:0"]
             for model_id in candidate_models:
                 try:
                     messages = self.history + [{"role": "user", "content": user_input}]
+                    # Try converse() API first
+                    try:
+                        conv_res = self.bedrock_client.converse(
+                            modelId=model_id,
+                            system=[{"text": system_prompt}],
+                            messages=[{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages],
+                            inferenceConfig={"maxTokens": 1000, "temperature": 0.7}
+                        )
+                        reply = conv_res.get("output", {}).get("message", {}).get("content", [])[0].get("text", "")
+                        if reply:
+                            self.history.append({"role": "user", "content": user_input})
+                            self.history.append({"role": "assistant", "content": reply})
+                            return reply
+                    except Exception as conv_err:
+                        pass
+
+                    # Fallback to invoke_model() API
                     payload = {
                         "system": [{"text": system_prompt}],
                         "messages": [{"role": m["role"], "content": [{"text": m["content"]}]} for m in messages]
