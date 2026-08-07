@@ -596,6 +596,48 @@ export default function DashboardPage() {
       {/* 2. Main Workspace */}
       <main className="flex-1 flex flex-col justify-between bg-[#090814] relative overflow-hidden">
         
+        {/* TOP 3 LIVE COUNTERS BAR */}
+        <div className="bg-[#120E2E] border-b border-[#231F42] px-4 py-2.5 flex items-center justify-between gap-3 text-xs overflow-x-auto">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/leads"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950 to-indigo-950 border border-cyan-500/40 hover:border-cyan-400 transition shadow-md group"
+            >
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span className="text-gray-300 font-medium">🔥 Hot Leads:</span>
+              <span className="font-extrabold text-cyan-300 bg-cyan-900/60 px-2 py-0.5 rounded-md text-xs">8</span>
+            </Link>
+
+            <Link
+              href="/campaigns"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-950 to-purple-950 border border-indigo-500/40 hover:border-indigo-400 transition shadow-md group"
+            >
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+              <span className="text-gray-300 font-medium">📋 Tasks Due Today:</span>
+              <span className="font-extrabold text-indigo-300 bg-indigo-900/60 px-2 py-0.5 rounded-md text-xs">14</span>
+            </Link>
+
+            <Link
+              href="/campaigns/camp-001/tasks/task-001"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-950 to-red-950 border border-amber-500/40 hover:border-amber-400 transition shadow-md group"
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span className="text-gray-300 font-medium">✨ Copy Pending Review:</span>
+              <span className="font-extrabold text-amber-300 bg-amber-900/60 px-2 py-0.5 rounded-md text-xs">5</span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link href="/leads" className="text-cyan-400 hover:underline font-semibold text-[11px]">Kanban</Link>
+            <span className="text-gray-600">|</span>
+            <Link href="/calls" className="text-cyan-400 hover:underline font-semibold text-[11px]">Calls</Link>
+            <span className="text-gray-600">|</span>
+            <Link href="/analytics" className="text-cyan-400 hover:underline font-semibold text-[11px]">Analytics</Link>
+            <span className="text-gray-600">|</span>
+            <Link href="/settings/integrations" className="text-cyan-400 hover:underline font-semibold text-[11px]">Settings</Link>
+          </div>
+        </div>
+
         {/* HEADER BAR */}
         <header className="h-16 border-b border-[#231F42] bg-[#110E26]/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
           

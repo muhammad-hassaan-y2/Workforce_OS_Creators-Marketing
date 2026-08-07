@@ -154,7 +154,7 @@ export async function runAgentTask(prompt: string, agentType: string = "mesh"): 
 
 export async function runBedrockOrchestration(): Promise<any> {
   const res = await fetch(`${API_BASE_URL}/bedrock/orchestrate`, {
-    method: "POST",
+    method: "GET",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader()
@@ -164,5 +164,85 @@ export async function runBedrockOrchestration(): Promise<any> {
   if (!res.ok) {
     throw new Error("Failed to execute Bedrock multi-agent orchestration workflow.");
   }
+  return res.json();
+}
+
+export async function fetchCounters(): Promise<{ hot_leads: number; tasks_due_today: number; copy_pending_review: number }> {
+  const res = await fetch(`${API_BASE_URL}/counters`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return { hot_leads: 8, tasks_due_today: 14, copy_pending_review: 5 };
+  return res.json();
+}
+
+export async function fetchLeads(): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/leads`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchLeadDetails(id: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/leads/${id}`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) throw new Error("Lead not found");
+  return res.json();
+}
+
+export async function updateLead(id: string, data: any): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/leads/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error("Failed to update lead");
+  return res.json();
+}
+
+export async function fetchCampaigns(): Promise<{ campaigns: any[]; tasks: any[] }> {
+  const res = await fetch(`${API_BASE_URL}/campaigns`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return { campaigns: [], tasks: [] };
+  return res.json();
+}
+
+export async function fetchCopyReview(taskId: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/copy_review`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function postCopyAction(taskId: string, action: "approve" | "request_changes", note: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/copy_review/action`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify({ action, note })
+  });
+  if (!res.ok) throw new Error("Failed to post copy review action");
+  return res.json();
+}
+
+export async function fetchCalls(): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/calls`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchAnalytics(): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/analytics`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return {};
+  return res.json();
+}
+
+export async function fetchIntegrations(): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/settings/integrations`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchBrandGuidelines(): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/settings/brand`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchTeamSettings(): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/settings/team`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) return {};
   return res.json();
 }

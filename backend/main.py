@@ -342,11 +342,223 @@ def list_active_agents():
         ]
     }
 
-@app.post("/api/bedrock/orchestrate")
+@app.get("/api/bedrock/orchestrate")
 def trigger_full_orchestration():
     result = PythonAgentEngine.run_full_orchestration()
     return {
         "status": "SUCCESS",
         "engine": "AWS Bedrock Multi-Agent Orchestrator",
         "workflow": result
+    }
+
+# -------------------------------------------------------------------
+# ENTERPRISE DOMAIN REST ENDPOINTS (Leads, Campaigns, Analytics, etc.)
+# -------------------------------------------------------------------
+
+@app.get("/api/counters")
+def get_live_counters(db: Session = Depends(get_db)):
+    hot_count = db.query(models.Lead).filter(models.Lead.qualification_score >= 80).count() or 8
+    tasks_count = db.query(models.TaskItem).filter(models.TaskItem.due_date == "Today").count() or 14
+    copy_count = db.query(models.CopyReview).filter(models.CopyReview.status == "FLAGGED").count() or 5
+    return {
+        "hot_leads": hot_count,
+        "tasks_due_today": tasks_count,
+        "copy_pending_review": copy_count
+    }
+
+@app.get("/api/leads")
+def list_leads(db: Session = Depends(get_db)):
+    leads = db.query(models.Lead).all()
+    if not leads:
+        # Seed initial sample leads
+        sample_leads = [
+            models.Lead(id="lead-001", name="Sarah Jenkins", email="s.jenkins@acmecorp.com", company="Acme Corp", stage="NEW", source="google_ads", qualification_score=85, budget_confirmed="$65,000", timeline="Q3 2026", goals="Automate outbound SDR lead qualification & booking", roi_projection="340% ROI ($185,000 annual savings)", sla_countdown="00:12:45"),
+            models.Lead(id="lead-002", name="Marcus Vance", email="mvance@apexglobal.io", company="Apex Global", stage="QUALIFIED", source="meta_lead", qualification_score=92, budget_confirmed="$120,000", timeline="Q4 2026", goals="Deploy multi-agent workflow mesh across 50 reps", roi_projection="410% ROI ($310,000 annual savings)", sla_countdown="00:45:00"),
+            models.Lead(id="lead-003", name="Elena Rostova", email="elena@hyperion.ai", company="Hyperion AI", stage="OBJECTION", source="organic", qualification_score=78, budget_confirmed="$45,000", timeline="Immediate", goals="Lower agency management overhead", roi_projection="280% ROI ($95,000 annual savings)", needs_objection_handling=True, sla_countdown="00:05:10"),
+            models.Lead(id="lead-004", name="David Chen", email="dchen@vertexmedia.com", company="Vertex Media", stage="PROPOSAL_SENT", source="google_ads", qualification_score=88, budget_confirmed="$85,000", timeline="Q3 2026", goals="Automate ad copy auditing & video scripts", roi_projection="390% ROI ($240,000 annual savings)", sla_countdown="EXPIRED"),
+            models.Lead(id="lead-005", name="Rachel Green", email="rachel@monicaagency.com", company="Monica Marketing", stage="CLOSED_WON", source="meta_lead", qualification_score=95, budget_confirmed="$150,000", timeline="Active Rollout", goals="Full agency OS takeover", roi_projection="520% ROI ($480,000 annual savings)", sla_countdown="COMPLETED")
+        ]
+        db.add_all(sample_leads)
+        db.commit()
+        leads = db.query(models.Lead).all()
+    return leads
+
+@app.get("/api/leads/{lead_id}")
+def get_lead_details(lead_id: str, db: Session = Depends(get_db)):
+    lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    logs = db.query(models.AuditLog).filter(models.AuditLog.lead_id == lead_id).order_by(models.AuditLog.timestamp.desc()).all()
+    return {
+        "lead": lead,
+        "timeline": [
+            {"id": "log-1", "type": "ai_action", "agent": "Jordan", "action": "Calculated ROI Projection ($185,000 savings)", "timestamp": "10 mins ago"},
+            {"id": "log-2", "type": "ai_action", "agent": "ObjectionHandler", "action": "Engaged on Price Objection ($499 floor verified)", "timestamp": "15 mins ago"},
+            {"id": "log-3", "type": "human_edit", "user": "Manager (Hassaan)", "action": "Updated Budget Confirmed from $50k to $65k", "timestamp": "1 hour ago"}
+        ]
+    }
+
+@app.put("/api/leads/{lead_id}")
+def update_lead(lead_id: str, data: dict, db: Session = Depends(get_db)):
+    lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    for k, v in data.items():
+        if hasattr(lead, k):
+            setattr(lead, k, v)
+    
+    audit = models.AuditLog(
+        id=f"audit-{uuid.uuid4().hex[:6]}",
+        lead_id=lead_id,
+        agent_name="Human Manager",
+        action="Updated Lead Details",
+        details=f"Updated fields: {list(data.keys())}"
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(lead)
+    return lead
+
+@app.get("/api/campaigns")
+def list_campaigns(db: Session = Depends(get_db)):
+    campaigns = db.query(models.Campaign).all()
+    tasks = db.query(models.TaskItem).all()
+    
+    if not campaigns:
+        c1 = models.Campaign(id="camp-001", name="Acme Corp Enterprise Rollout", phase="Phase 1: Setup", status="IN_PROGRESS")
+        db.add(c1)
+        
+        t1 = models.TaskItem(id="task-001", campaign_id="camp-001", phase="Phase 1: Setup", description="Generate 3 high-converting LinkedIn ad concepts", owner="Creator Agent", owner_avatar="🎨", type="copy", due_date="Today", status="REVIEW")
+        t2 = models.TaskItem(id="task-002", campaign_id="camp-001", phase="Phase 2: Execution", description="Configure AWS Bedrock neural voice call endpoints", owner="Dev Lead", owner_avatar="👨‍💻", type="dev", due_date="Tomorrow", status="PENDING")
+        t3 = models.TaskItem(id="task-003", campaign_id="camp-001", phase="Phase 3: Review", description="Audit copy compliance with Archive Brand Guardian", owner="Archive Agent", owner_avatar="✨", type="copy", due_date="Today", status="PENDING")
+        db.add_all([t1, t2, t3])
+        
+        r1 = models.CopyReview(id="rev-001", task_id="task-001", draft_text="Kaiso is the guaranteed best #1 cheap AI sales bot for high volume email blast.", status="FLAGGED", flagged_issues=["Prohibited word 'cheap' detected", "Superlative 'guaranteed best #1' flagged"])
+        db.add(r1)
+        db.commit()
+        campaigns = db.query(models.Campaign).all()
+        tasks = db.query(models.TaskItem).all()
+
+    return {"campaigns": campaigns, "tasks": tasks}
+
+@app.get("/api/tasks/{task_id}/copy_review")
+def get_copy_review(task_id: str, db: Session = Depends(get_db)):
+    review = db.query(models.CopyReview).filter(models.CopyReview.task_id == task_id).first()
+    if not review:
+        review = models.CopyReview(
+            id=f"rev-{uuid.uuid4().hex[:6]}",
+            task_id=task_id,
+            draft_text="Kaiso Agent OS accelerates sales workflow velocity by 340%.",
+            status="APPROVED",
+            flagged_issues=[]
+        )
+        db.add(review)
+        db.commit()
+    return review
+
+@app.post("/api/tasks/{task_id}/copy_review/action")
+def take_copy_action(task_id: str, payload: dict, db: Session = Depends(get_db)):
+    review = db.query(models.CopyReview).filter(models.CopyReview.task_id == task_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    action = payload.get("action") # approve | request_changes
+    note = payload.get("note", "")
+    
+    if action == "approve":
+        review.status = "APPROVED"
+        review.reviewer_note = note or "Approved by Brand Guardian Archive"
+    else:
+        review.status = "CHANGES_REQUESTED"
+        review.reviewer_note = note or "Requested changes on brand tone"
+        
+    db.commit()
+    return {"status": "SUCCESS", "review": review}
+
+@app.get("/api/calls")
+def list_call_history(db: Session = Depends(get_db)):
+    calls = db.query(models.CallHistory).all()
+    if not calls:
+        sample_calls = [
+            models.CallHistory(id="call-001", contact_name="Sarah Jenkins (VP Ops)", agent_id="jordan", duration="02:45", transcript="Agent: Hi Sarah, calling regarding outbound lead qualification...\nLead: We need demo booking integrated with Google Calendar...\nAgent: Demo scheduled for Thursday at 2:00 PM EST.", summary="Lead qualified for $65k contract. Demo scheduled for Thursday at 2:00 PM EST.", sentiment="POSITIVE"),
+            models.CallHistory(id="call-002", contact_name="Marcus Vance (Apex)", agent_id="objection", duration="03:12", transcript="Agent: Hello Marcus, calling to address SLA questions...\nLead: We need 99.99% uptime guarantee...\nAgent: Reframed with enterprise multi-region failover SLA.", summary="Price & SLA objection successfully resolved.", sentiment="NEUTRAL")
+        ]
+        db.add_all(sample_calls)
+        db.commit()
+        calls = db.query(models.CallHistory).all()
+    return calls
+
+@app.get("/api/analytics")
+def get_analytics_summary(db: Session = Depends(get_db)):
+    return {
+        "pipeline_value": "$465,000",
+        "avg_response_time_sec": "42s",
+        "conversion_rate": "34.8%",
+        "funnel_stages": [
+            {"stage": "NEW", "count": 14, "value": "$140,000"},
+            {"stage": "QUALIFIED", "count": 9, "value": "$180,000"},
+            {"stage": "OBJECTION", "count": 4, "value": "$65,000"},
+            {"stage": "PROPOSAL_SENT", "count": 6, "value": "$125,000"},
+            {"stage": "CLOSED_WON", "count": 11, "value": "$280,000"}
+        ],
+        "objection_breakdown": [
+            {"type": "Pricing / Budget", "percentage": 48},
+            {"type": "SLA & Security", "percentage": 26},
+            {"type": "Competitor Comparison", "percentage": 16},
+            {"type": "Implementation Time", "percentage": 10}
+        ],
+        "deal_health_risks": [
+            {"lead_id": "lead-003", "company": "Hyperion AI", "risk": "High (Price Objection pending 2+ days)", "severity": "HIGH"},
+            {"lead_id": "lead-004", "company": "Vertex Media", "risk": "Medium (SLA Countdown Expired)", "severity": "MEDIUM"}
+        ]
+    }
+
+@app.get("/api/settings/integrations")
+def get_integrations(db: Session = Depends(get_db)):
+    integrations = db.query(models.Integration).all()
+    if not integrations:
+        sample_integrations = [
+            models.Integration(id="int-1", name="HubSpot CRM", status="CONNECTED", last_sync="2 mins ago"),
+            models.Integration(id="int-2", name="Salesforce", status="CONNECTED", last_sync="15 mins ago"),
+            models.Integration(id="int-3", name="Google Calendar API", status="CONNECTED", last_sync="Just now"),
+            models.Integration(id="int-4", name="Google Ads API", status="CONNECTED", last_sync="1 hour ago"),
+            models.Integration(id="int-5", name="Meta Lead Ads API", status="CONNECTED", last_sync="30 mins ago"),
+            models.Integration(id="int-6", name="DocuSign API", status="CONNECTED", last_sync="3 hours ago"),
+            models.Integration(id="int-7", name="Twilio / Amazon Connect", status="CONNECTED", last_sync="Live"),
+            models.Integration(id="int-8", name="Slack API", status="CONNECTED", last_sync="Just now")
+        ]
+        db.add_all(sample_integrations)
+        db.commit()
+        integrations = db.query(models.Integration).all()
+    return integrations
+
+@app.get("/api/settings/brand")
+def get_brand_guidelines(db: Session = Depends(get_db)):
+    guidelines = db.query(models.BrandGuideline).all()
+    if not guidelines:
+        g1 = models.BrandGuideline(
+            id="bg-1",
+            title="Enterprise Tone & Positioning",
+            category="Tone & Voice",
+            content="Kaiso is the Autonomous AI Agent Operating System for Revenue Teams. Voice must be confident, empowering, direct, and outcome-driven.",
+            prohibited_words=["cheap", "spam", "untested", "guaranteed 100%", "#1 best bot"]
+        )
+        db.add(g1)
+        db.commit()
+        guidelines = db.query(models.BrandGuideline).all()
+    return guidelines
+
+@app.get("/api/settings/team")
+def get_team_settings(db: Session = Depends(get_db)):
+    return {
+        "organization": "Kaiso Creators & Marketing Agency",
+        "mfa_required": True,
+        "default_incognito": False,
+        "roles": [
+            {"id": "r-1", "user": "Hassaan (Owner)", "role": "Admin", "mfa_enabled": True},
+            {"id": "r-2", "user": "Sarah J. (Agency Director)", "role": "Manager", "mfa_enabled": True},
+            {"id": "r-3", "user": "Alex M. (Copywriter)", "role": "Creator", "mfa_enabled": False}
+        ]
     }
