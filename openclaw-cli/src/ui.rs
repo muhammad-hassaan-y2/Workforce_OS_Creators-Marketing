@@ -91,7 +91,7 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
     match state.active_tab {
         ActiveTab::MemoryReplay => draw_memory_replay(f, state, chunks[1]),
         ActiveTab::StatusDashboard => draw_status_dashboard(f, state, chunks[1]),
-        ActiveTab::RelationshipGraph => draw_relationship_graph(f, chunks[1]),
+        ActiveTab::RelationshipGraph => draw_relationship_graph(f, state, chunks[1]),
     }
 }
 
@@ -165,32 +165,71 @@ fn draw_status_dashboard(f: &mut Frame, state: &AppState, area: ratatui::layout:
     f.render_widget(table, area);
 }
 
-fn draw_relationship_graph(f: &mut Frame, area: ratatui::layout::Rect) {
-    let graph_text = r#"
-[ 🌐 TOP OF FUNNEL (TOFU): Lead Gen & Scraping ]
- ├── Browser Control Agent ──> Scrapes B2B Prospect Lists & Submits Forms
- └── Creator Agent ───────────> Generates Ad Copy, Viral Hooks & Video Scripts
-                                  │
-                                  ▼
-[ 🎯 MIDDLE OF FUNNEL (MOFU): Qualification & Outreach ]
- ├── Jordan (Sales Agent) ────> BANT Lead Qualification & Deal ROI Calculation
- └── Phone Caller Agent ──────> Sub-310ms Neural Voice Outreach & Demo Booking
-                                  │
-                                  ▼
-[ 🤝 BOTTOM OF FUNNEL (BOFU): Objection Handling & Closing ]
- ├── ObjectionHandler ────────> De-escalates Pricing & SLA Objections ($499 Floor)
- └── Archive (Brand) ─────────> Audits Proposals & Ad Copy (Zero Hallucinations)
-                                  │
-                                  ▼
-[ 🚀 POST-SALE ONBOARDING & OPS: Execution & Audit ]
- ├── Atlas (PM Planner) ──────> 4-Phase Client Project Rollout (On lead.status=CLOSED_WON)
- ├── Warden (Auditor) ────────> Database Write-Lock & Conflict Scanner
- └── Forge (Agent Creator) ───> Generates Custom Specialized Agents at Runtime
-    "#;
+fn draw_relationship_graph(f: &mut Frame, state: &AppState, area: ratatui::layout::Rect) {
+    let mut tofu = vec![];
+    let mut mofu = vec![];
+    let mut bofu = vec![];
+    let mut post_sale = vec![];
+    let mut other = vec![];
 
-    let p = Paragraph::new(graph_text)
+    // Categorize agents dynamically based on Hassaan's priorities
+    for agent in &state.agents {
+        let name = agent.name.to_lowercase();
+        let role = agent.role.to_lowercase();
+        
+        if name.contains("browser") || name.contains("creator") || role.contains("scrap") || role.contains("ad copy") {
+            tofu.push(agent);
+        } else if name.contains("jordan") || name.contains("phone") || role.contains("sales") || role.contains("outreach") {
+            mofu.push(agent);
+        } else if name.contains("objection") || name.contains("archive") || name.contains("brand") || role.contains("closing") {
+            bofu.push(agent);
+        } else if name.contains("atlas") || name.contains("warden") || name.contains("forge") || role.contains("pm") || role.contains("audit") {
+            post_sale.push(agent);
+        } else {
+            other.push(agent);
+        }
+    }
+
+    let mut buf = String::new();
+
+    buf.push_str("[ 🌐 TOP OF FUNNEL (TOFU): Lead Gen & Scraping ]\n");
+    for (i, a) in tofu.iter().enumerate() {
+        let prefix = if i == tofu.len() - 1 { " └──" } else { " ├──" };
+        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
+    }
+    buf.push_str("                                  │\n                                  ▼\n");
+
+    buf.push_str("[ 🎯 MIDDLE OF FUNNEL (MOFU): Qualification & Outreach ]\n");
+    for (i, a) in mofu.iter().enumerate() {
+        let prefix = if i == mofu.len() - 1 { " └──" } else { " ├──" };
+        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
+    }
+    buf.push_str("                                  │\n                                  ▼\n");
+
+    buf.push_str("[ 🤝 BOTTOM OF FUNNEL (BOFU): Objection Handling & Closing ]\n");
+    for (i, a) in bofu.iter().enumerate() {
+        let prefix = if i == bofu.len() - 1 { " └──" } else { " ├──" };
+        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
+    }
+    buf.push_str("                                  │\n                                  ▼\n");
+
+    buf.push_str("[ 🚀 POST-SALE ONBOARDING & OPS: Execution & Audit ]\n");
+    for (i, a) in post_sale.iter().enumerate() {
+        let prefix = if i == post_sale.len() - 1 { " └──" } else { " ├──" };
+        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
+    }
+
+    if !other.is_empty() {
+        buf.push_str("\n[ ❓ UNCATEGORIZED AGENTS ]\n");
+        for (i, a) in other.iter().enumerate() {
+            let prefix = if i == other.len() - 1 { " └──" } else { " ├──" };
+            buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
+        }
+    }
+
+    let p = Paragraph::new(buf)
         .style(Style::default().fg(Color::LightCyan))
-        .block(Block::default().title("Funnel Architecture").borders(Borders::ALL));
+        .block(Block::default().title("Funnel Architecture (Dynamic)").borders(Borders::ALL));
 
     f.render_widget(p, area);
 }
