@@ -15,7 +15,11 @@ mod parser;
 mod db;
 mod ui;
 
-/// OpenClaw CLI
+/// OpenClaw CLI - The unified command line interface for Workforce OS
+/// 
+/// Provides powerful tools to interact with, monitor, and query autonomous agents 
+/// operating within the Workforce OS ecosystem. Run without arguments to launch 
+/// the interactive Terminal User Interface (TUI) Dashboard.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -25,25 +29,28 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Agent related commands
+    /// Manage and interact with specific agents in the database
     Agent {
         #[command(subcommand)]
         agent_command: AgentCommands,
     },
-    /// Natural Language Query parsing
+    /// Natural Language Query Interface
+    /// 
+    /// Pass a natural language prompt (e.g., "please list all agents") and the 
+    /// internal parser will map it to the correct underlying system commands.
     Query {
-        /// The query string (can be unquoted)
+        /// The natural language query string (can be unquoted)
         text: Vec<String>,
     },
 }
 
 #[derive(Subcommand, Debug)]
 enum AgentCommands {
-    /// List all agents
+    /// List all registered agents and their current statuses
     List,
-    /// Inspect a specific agent
+    /// Inspect a specific agent's complete profile and state
     Inspect {
-        /// The ID of the agent to inspect
+        /// The UUID of the agent to inspect
         id: String,
     },
 }
