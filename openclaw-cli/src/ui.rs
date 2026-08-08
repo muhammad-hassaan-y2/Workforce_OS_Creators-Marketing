@@ -68,7 +68,7 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
         .split(f.area());
 
     // Tabs Menu
-    let titles = vec!["[1] Memory Replay", "[2] Status Dashboard", "[3] Relationship Graph"]
+    let titles: Vec<Line> = vec!["[1] Memory Replay", "[2] Status Dashboard", "[3] Relationship Graph"]
         .into_iter()
         .map(|t| Line::from(t))
         .collect();
