@@ -63,4 +63,19 @@ impl DbClient {
 
         Ok(memories)
     }
+
+    pub async fn inspect_agent(&self, agent_id: uuid::Uuid) -> Result<Agent, sqlx::Error> {
+        let agent = sqlx::query_as::<_, Agent>(
+            r#"
+            SELECT id, name, role, status
+            FROM agents
+            WHERE id = $1
+            "#
+        )
+        .bind(agent_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(agent)
+    }
 }

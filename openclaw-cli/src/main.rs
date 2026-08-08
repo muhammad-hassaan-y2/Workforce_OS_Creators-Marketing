@@ -11,7 +11,6 @@ use ratatui::{
 use std::{error::Error, io};
 use std::time::Duration;
 
-mod mcp_client;
 mod parser;
 mod db;
 mod ui;
@@ -57,21 +56,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match &cli.command {
         Some(Commands::Agent { agent_command }) => {
-            let mcp = mcp_client::McpClient::new()?;
+            let db_client = db::DbClient::new().await?;
             match agent_command {
                 AgentCommands::List => {
                     println!("Fetching agents...");
-                    match mcp.list_agents().await {
+                    match db_client.list_agents().await {
                         Ok(agents) => {
-                            for agent in agents { println!("- {}", agent); }
+                            for agent in agents { println!("- {} ({})", agent.name, agent.id); }
                         }
                         Err(e) => println!("Error: {}", e),
                     }
                 }
                 AgentCommands::Inspect { id } => {
-                    match mcp.inspect_agent(id).await {
-                        Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
-                        Err(e) => println!("Error: {}", e),
+                    if let Ok(uuid) = uuid::Uuid::parse_str(id) {
+                        match db_client.inspect_agent(uuid).await {
+                            Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
+                            Err(e) => println!("Error: {}", e),
+                        }
+                    } else {
+                        println!("Error: Invalid UUID format");
                     }
                 }
             }
@@ -82,20 +85,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
             match p.parse(&query_str) {
                 parser::Intent::ListAgents => {
                     println!("=> Intent mapped to 'Agent List'. Executing...");
-                    let mcp = mcp_client::McpClient::new()?;
-                    match mcp.list_agents().await {
+                    let db_client = db::DbClient::new().await?;
+                    match db_client.list_agents().await {
                         Ok(agents) => {
-                            for agent in agents { println!("- {}", agent); }
+                            for agent in agents { println!("- {} ({})", agent.name, agent.id); }
                         }
                         Err(e) => println!("Error: {}", e),
                     }
                 }
                 parser::Intent::InspectAgent(id) => {
                     println!("=> Intent mapped to 'Agent Inspect' for ID: {}. Executing...", id);
-                    let mcp = mcp_client::McpClient::new()?;
-                    match mcp.inspect_agent(&id).await {
-                        Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
-                        Err(e) => println!("Error: {}", e),
+                    let db_client = db::DbClient::new().await?;
+                    if let Ok(uuid) = uuid::Uuid::parse_str(&id) {
+                        match db_client.inspect_agent(uuid).await {
+                            Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
+                            Err(e) => println!("Error: {}", e),
+                        }
+                    } else {
+                        println!("Error: Invalid UUID format");
                     }
                 }
                 parser::Intent::Unknown(text) => {
