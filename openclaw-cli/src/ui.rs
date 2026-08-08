@@ -12,6 +12,7 @@ pub enum ActiveTab {
     MemoryReplay,
     StatusDashboard,
     RelationshipGraph,
+    WebUI,
 }
 
 pub struct AppState {
@@ -68,7 +69,7 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
         .split(f.area());
 
     // Tabs Menu
-    let titles: Vec<Line> = vec!["[1] Memory Replay", "[2] Status Dashboard", "[3] Relationship Graph"]
+    let titles: Vec<Line> = vec!["[1] Memory Replay", "[2] Status Dashboard", "[3] Relationship Graph", "[4] Adeele Web UI"]
         .into_iter()
         .map(|t| Line::from(t))
         .collect();
@@ -77,6 +78,7 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
         ActiveTab::MemoryReplay => 0,
         ActiveTab::StatusDashboard => 1,
         ActiveTab::RelationshipGraph => 2,
+        ActiveTab::WebUI => 3,
     };
 
     let tabs = Tabs::new(titles)
@@ -92,6 +94,7 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
         ActiveTab::MemoryReplay => draw_memory_replay(f, state, chunks[1]),
         ActiveTab::StatusDashboard => draw_status_dashboard(f, state, chunks[1]),
         ActiveTab::RelationshipGraph => draw_relationship_graph(f, state, chunks[1]),
+        ActiveTab::WebUI => draw_web_ui_tab(f, chunks[1]),
     }
 }
 
@@ -230,6 +233,21 @@ fn draw_relationship_graph(f: &mut Frame, state: &AppState, area: ratatui::layou
     let p = Paragraph::new(buf)
         .style(Style::default().fg(Color::LightCyan))
         .block(Block::default().title("Funnel Architecture (Dynamic)").borders(Borders::ALL));
+
+    f.render_widget(p, area);
+}
+
+fn draw_web_ui_tab(f: &mut Frame, area: ratatui::layout::Rect) {
+    let text = "\n\n🚀 Adeele Web UI\n\n\n\
+                The OpenClaw CLI is seamlessly integrated with the Adeele Web Dashboard.\n\n\
+                To launch the dashboard, press 'q' to exit the TUI, and run:\n\n\
+                > openclaw-cli web\n\n\
+                This will automatically open your default browser to http://localhost:3000.";
+
+    let p = Paragraph::new(text)
+        .style(Style::default().fg(Color::Cyan))
+        .alignment(ratatui::layout::Alignment::Center)
+        .block(Block::default().title("Web UI Integration").borders(Borders::ALL));
 
     f.render_widget(p, area);
 }

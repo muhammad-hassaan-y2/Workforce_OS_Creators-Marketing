@@ -8,6 +8,7 @@ chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.5", features = ["derive"] }
 crossterm = "0.29.0"
 dotenvy = "0.15.7"
+open = "5.4.1"
 ratatui = "0.30.2"
 reqwest = { version = "0.13.4", features = ["json"] }
 reqwest-eventsource = "0.6.0"

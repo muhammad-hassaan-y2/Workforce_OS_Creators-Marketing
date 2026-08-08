@@ -42,6 +42,8 @@ enum Commands {
         /// The natural language query string (can be unquoted)
         text: Vec<String>,
     },
+    /// Open the Adeele Web UI in your default browser
+    Web,
 }
 
 #[derive(Subcommand, Debug)]
@@ -117,6 +119,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
         },
+        Some(Commands::Web) => {
+            let url = "http://localhost:3000";
+            println!("Launching Adeele Web UI at {}...", url);
+            if open::that(url).is_err() {
+                println!("Error: Failed to open default browser. Please manually navigate to {}", url);
+            }
+        },
         None => {
             // Start the main TUI dashboard if no subcommands provided
             let db_client = db::DbClient::new().await?;
@@ -164,6 +173,7 @@ async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
                         KeyCode::Char('1') => state.active_tab = ui::ActiveTab::MemoryReplay,
                         KeyCode::Char('2') => state.active_tab = ui::ActiveTab::StatusDashboard,
                         KeyCode::Char('3') => state.active_tab = ui::ActiveTab::RelationshipGraph,
+                        KeyCode::Char('4') => state.active_tab = ui::ActiveTab::WebUI,
                         KeyCode::Down | KeyCode::Char('j') => {
                             if state.active_tab == ui::ActiveTab::MemoryReplay { state.next(); }
                         },
