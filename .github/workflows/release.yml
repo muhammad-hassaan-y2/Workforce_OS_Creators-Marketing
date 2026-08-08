@@ -1,0 +1,62 @@
+name: Release OpenClaw CLI
+
+on:
+  push:
+    branches:
+      - main
+      - openclaw
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: openclaw-cli-linux
+            asset_name: openclaw-cli-linux-amd64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: openclaw-cli-windows
+            asset_name: openclaw-cli-windows-amd64.exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: openclaw-cli-macos-m1
+            asset_name: openclaw-cli-macos-arm64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            artifact_name: openclaw-cli-macos-intel
+            asset_name: openclaw-cli-macos-amd64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Release Binary
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: ./openclaw-cli
+
+      - name: Prepare Artifact (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          mv ./openclaw-cli/target/${{ matrix.target }}/release/openclaw-cli ./openclaw-cli/target/${{ matrix.target }}/release/${{ matrix.asset_name }}
+          chmod +x ./openclaw-cli/target/${{ matrix.target }}/release/${{ matrix.asset_name }}
+
+      - name: Prepare Artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mv ./openclaw-cli/target/${{ matrix.target }}/release/openclaw-cli.exe ./openclaw-cli/target/${{ matrix.target }}/release/${{ matrix.asset_name }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ./openclaw-cli/target/${{ matrix.target }}/release/${{ matrix.asset_name }}
