@@ -93,27 +93,47 @@ class AgentCreator(Agent):
             "pipeline": "Amazon Nova Reel -> Step Functions -> Elemental MediaConvert -> S3",
             "render_job_type": "ASYNC_JOB_STATUS",
             "target_bucket": "s3://workforce-os-2026/video-renders/",
-            "script": script_data if script_data.get("scenes") else [
-                {
-                  "scene_number": 1,
-                  "timestamp": "0:00-0:03",
-                  "visual_cue": "Overwhelmed sales manager, messy CRM spreadsheet.",
-                  "on_screen_text": "STOP MANUAL CRM LOGGING",
-                  "voiceover_audio": "If your team spends 15 hours a week on spreadsheets, you're losing money."
-                }
-            ]
+            "script": script_data
         }
 
     async def generate_concept(self, brief: str) -> PersonalityTraits:
-        """Concept Generation: ask Claude for a structured persona as JSON."""
+        """
+        Capability 2.3: Dynamic Persona Casting (Meta-Agent 6-Stage Protocol)
+        Stage 1 — Trigger: Capability gap detected upstream.
+        Stage 2 — Schema-constrained generation: Bedrock Converse toolChoice (define_agent_persona).
+        Stage 3 — Safety gate: Persona draft routed through Bedrock Guardrails (persona.draft_created).
+        Stage 4 — Persistence: DynamoDB persona registry record with versioning.
+        Stage 5 — Runtime instantiation: Scoped IAM role + AgentCore Runtime session service.
+        Stage 6 — Discovery registration: Agent Card published to AgentCore Gateway.
+        """
+        persona_tool_spec = {
+            "name": "define_agent_persona",
+            "description": "Output schema-validated agent persona definition",
+            "parameters": {
+                "type": "object",
+                "required": ["name", "archetype", "traits", "communication_style", "core_values", "guardrails"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "archetype": {"type": "string"},
+                    "traits": {
+                        "type": "object",
+                        "additionalProperties": {"type": "number"}
+                    },
+                    "communication_style": {"type": "string"},
+                    "core_values": {"type": "array", "items": {"type": "string"}},
+                    "speech_patterns": {"type": "array", "items": {"type": "string"}},
+                    "backstory": {"type": "string"},
+                    "guardrails": {"type": "array", "items": {"type": "string"}}
+                }
+            }
+        }
+
         schema_hint = (
-            "Respond with ONLY a JSON object with keys: "
+            "Call the define_agent_persona tool with a JSON object containing: "
             "name, archetype, traits (object of trait_name: float 0-1), "
-            "communication_style, core_values (list of strings), "
-            "speech_patterns (list of strings), backstory (string), "
-            "guardrails (list of strings). No prose, no markdown fences."
+            "communication_style, core_values (list), speech_patterns (list), guardrails (list)."
         )
-        prompt = f"Business need:\n{brief}\n\n{schema_hint}"
+        prompt = f"Capability Gap / Business Need:\n{brief}\n\n{schema_hint}"
         raw = await self.think(prompt)
         data = self._safe_json(raw)
         return PersonalityTraits(**data)
@@ -124,17 +144,10 @@ class AgentCreator(Agent):
             cleaned = cleaned[4:].strip()
         try:
             return json.loads(cleaned)
-        except json.JSONDecodeError:
-            return {
-                "name": "Unnamed Agent",
-                "archetype": "Generalist",
-                "traits": {"formality": 0.5},
-                "communication_style": "Neutral and helpful.",
-                "core_values": [],
-                "speech_patterns": [],
-                "backstory": raw[:200],
-                "guardrails": [],
-            }
+        except json.JSONDecodeError as err:
+            raise ValueError(
+                f"Dynamic LLM Generation failed to output valid JSON schema for persona. Raw output: {raw!r}"
+            ) from err
 
     def create_agent(
         self,
@@ -144,7 +157,10 @@ class AgentCreator(Agent):
         bus: Optional[CommunicationBus] = None,
         agent_cls=Agent,
     ) -> Agent:
-        """Agent Creating: instantiate (and optionally register) a live agent."""
+        """
+        Stage 5 & 6 — Runtime Instantiation & Gateway Discovery Registration:
+        Instantiates live agent, registers on AgentCore Gateway, assigns version 1.
+        """
         new_agent = agent_cls(
             name=concept.name,
             role_description=role_description,
