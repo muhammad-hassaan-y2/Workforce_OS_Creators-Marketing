@@ -147,8 +147,15 @@ async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
                 if key.kind == crossterm::event::KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char('q') => break,
-                        KeyCode::Down | KeyCode::Char('j') => state.next(),
-                        KeyCode::Up | KeyCode::Char('k') => state.previous(),
+                        KeyCode::Char('1') => state.active_tab = ui::ActiveTab::MemoryReplay,
+                        KeyCode::Char('2') => state.active_tab = ui::ActiveTab::StatusDashboard,
+                        KeyCode::Char('3') => state.active_tab = ui::ActiveTab::RelationshipGraph,
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            if state.active_tab == ui::ActiveTab::MemoryReplay { state.next(); }
+                        },
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            if state.active_tab == ui::ActiveTab::MemoryReplay { state.previous(); }
+                        },
                         _ => {}
                     }
                 }

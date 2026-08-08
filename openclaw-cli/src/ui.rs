@@ -1,14 +1,21 @@
-use crate::db::{Agent, DbClient, Memory};
+use crate::db::{Agent, Memory};
 use ratatui::{
-    backend::Backend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Tabs, Table, Row, Cell},
     Frame,
 };
 
+#[derive(PartialEq)]
+pub enum ActiveTab {
+    MemoryReplay,
+    StatusDashboard,
+    RelationshipGraph,
+}
+
 pub struct AppState {
+    pub active_tab: ActiveTab,
     pub agents: Vec<Agent>,
     pub agent_list_state: ListState,
     pub selected_memories: Vec<Memory>,
@@ -18,6 +25,7 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Self {
         Self {
+            active_tab: ActiveTab::MemoryReplay,
             agents: vec![],
             agent_list_state: ListState::default(),
             selected_memories: vec![],
@@ -54,12 +62,45 @@ impl AppState {
 
 pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
     let chunks = Layout::default()
-        .direction(Direction::Horizontal)
+        .direction(Direction::Vertical)
         .margin(1)
-        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
+        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
         .split(f.area());
 
-    // Left pane: Agents List
+    // Tabs Menu
+    let titles = vec!["[1] Memory Replay", "[2] Status Dashboard", "[3] Relationship Graph"]
+        .into_iter()
+        .map(|t| Line::from(t))
+        .collect();
+    
+    let tab_index = match state.active_tab {
+        ActiveTab::MemoryReplay => 0,
+        ActiveTab::StatusDashboard => 1,
+        ActiveTab::RelationshipGraph => 2,
+    };
+
+    let tabs = Tabs::new(titles)
+        .block(Block::default().borders(Borders::ALL).title("OpenClaw OS"))
+        .select(tab_index)
+        .style(Style::default().fg(Color::Cyan))
+        .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+    
+    f.render_widget(tabs, chunks[0]);
+
+    // Main Content Area
+    match state.active_tab {
+        ActiveTab::MemoryReplay => draw_memory_replay(f, state, chunks[1]),
+        ActiveTab::StatusDashboard => draw_status_dashboard(f, state, chunks[1]),
+        ActiveTab::RelationshipGraph => draw_relationship_graph(f, chunks[1]),
+    }
+}
+
+fn draw_memory_replay(f: &mut Frame, state: &mut AppState, area: ratatui::layout::Rect) {
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
+        .split(area);
+
     let agents: Vec<ListItem> = state.agents.iter().map(|a| {
         ListItem::new(Line::from(vec![
             Span::styled(format!("{} ", a.name), Style::default().add_modifier(Modifier::BOLD)),
@@ -74,7 +115,6 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
 
     f.render_stateful_widget(agents_list, chunks[0], &mut state.agent_list_state);
 
-    // Right pane: Memory Replay
     let memory_content = if state.loading {
         "Loading...".to_string()
     } else if let Some(agent) = state.selected_agent() {
@@ -94,4 +134,63 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
     let p = Paragraph::new(memory_content)
         .block(Block::default().title("Memory Replay").borders(Borders::ALL));
     f.render_widget(p, chunks[1]);
+}
+
+fn draw_status_dashboard(f: &mut Frame, state: &AppState, area: ratatui::layout::Rect) {
+    let header = Row::new(vec!["ID", "Name", "Role", "Status"])
+        .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+        .bottom_margin(1);
+
+    let rows: Vec<Row> = state.agents.iter().map(|a| {
+        let status_color = if a.status.to_lowercase() == "active" { Color::Green } else { Color::Red };
+        Row::new(vec![
+            Cell::from(a.id.to_string()),
+            Cell::from(a.name.clone()),
+            Cell::from(a.role.clone()),
+            Cell::from(a.status.clone()).style(Style::default().fg(status_color)),
+        ])
+    }).collect();
+
+    let widths = [
+        Constraint::Length(38),
+        Constraint::Percentage(25),
+        Constraint::Percentage(25),
+        Constraint::Percentage(20),
+    ];
+
+    let table = Table::new(rows, widths)
+        .header(header)
+        .block(Block::default().title("Live Agent Status").borders(Borders::ALL));
+
+    f.render_widget(table, area);
+}
+
+fn draw_relationship_graph(f: &mut Frame, area: ratatui::layout::Rect) {
+    let graph_text = r#"
+[ 🌐 TOP OF FUNNEL (TOFU): Lead Gen & Scraping ]
+ ├── Browser Control Agent ──> Scrapes B2B Prospect Lists & Submits Forms
+ └── Creator Agent ───────────> Generates Ad Copy, Viral Hooks & Video Scripts
+                                  │
+                                  ▼
+[ 🎯 MIDDLE OF FUNNEL (MOFU): Qualification & Outreach ]
+ ├── Jordan (Sales Agent) ────> BANT Lead Qualification & Deal ROI Calculation
+ └── Phone Caller Agent ──────> Sub-310ms Neural Voice Outreach & Demo Booking
+                                  │
+                                  ▼
+[ 🤝 BOTTOM OF FUNNEL (BOFU): Objection Handling & Closing ]
+ ├── ObjectionHandler ────────> De-escalates Pricing & SLA Objections ($499 Floor)
+ └── Archive (Brand) ─────────> Audits Proposals & Ad Copy (Zero Hallucinations)
+                                  │
+                                  ▼
+[ 🚀 POST-SALE ONBOARDING & OPS: Execution & Audit ]
+ ├── Atlas (PM Planner) ──────> 4-Phase Client Project Rollout (On lead.status=CLOSED_WON)
+ ├── Warden (Auditor) ────────> Database Write-Lock & Conflict Scanner
+ └── Forge (Agent Creator) ───> Generates Custom Specialized Agents at Runtime
+    "#;
+
+    let p = Paragraph::new(graph_text)
+        .style(Style::default().fg(Color::LightCyan))
+        .block(Block::default().title("Funnel Architecture").borders(Borders::ALL));
+
+    f.render_widget(p, area);
 }
