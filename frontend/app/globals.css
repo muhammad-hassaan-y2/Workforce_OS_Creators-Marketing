@@ -18,13 +18,24 @@
   }
 }
 
+/* Kaiso Amber Orange to Coral Red Theme Gradients */
+.bg-kaiso-amber-gradient {
+  background: linear-gradient(135deg, #FF8A00 0%, #FF3B57 100%);
+}
+
+.text-kaiso-amber-gradient {
+  background: linear-gradient(135deg, #FF8A00 0%, #FF5E36 50%, #FF3B57 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Teleport Midnight Purple Gradients & Neon Glows */
 .bg-teleport-gradient {
   background: linear-gradient(135deg, #090814 0%, #110E26 50%, #090814 100%);
 }
 
 .text-teleport-purple {
-  background: linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #6366F1 100%);
+  background: linear-gradient(135deg, #FF8A00 0%, #FF5E36 50%, #FF3B57 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

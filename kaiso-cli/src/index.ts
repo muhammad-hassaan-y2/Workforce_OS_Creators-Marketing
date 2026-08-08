@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { printBanner } from "./banner";
 import { loginCommand } from "./commands/login";
 import { chatCommand, startRepl } from "./commands/chat";
 import { draftCommand } from "./commands/draft";
 import { configGetCommand, configSetApiUrlCommand } from "./commands/config";
+import { 
+  orchestrateCommand, 
+  personaGenerateCommand, 
+  personaListCommand, 
+  voiceCallCommand 
+} from "./commands/agentCommands";
 import { ensureAuthenticated } from "./lib/auth";
 
-const VERSION = "0.1.3"; // keep in sync with package.json
+const VERSION = "0.2.0";
 
 const program = new Command();
 
@@ -25,6 +30,31 @@ program
   .command("chat [prompt]")
   .description("Send a message to the agent (omit prompt to open an interactive session)")
   .action(chatCommand);
+
+program
+  .command("orchestrate")
+  .description("Run 6-step multi-agent orchestration workflow across Sales, Objection, Brand & PM agents")
+  .action(orchestrateCommand);
+
+program
+  .command("persona")
+  .description("Dynamic Agent Persona commands")
+  .argument("[action]", "generate | list")
+  .argument("[brief]", "Brief prompt for persona generation")
+  .action(async (action, brief) => {
+    if (action === "list" || !action) {
+      await personaListCommand();
+    } else if (action === "generate" || action === "create") {
+      await personaGenerateCommand(brief);
+    } else {
+      await personaListCommand();
+    }
+  });
+
+program
+  .command("call [lead]")
+  .description("Initiate a sub-310ms neural voice call session with a target lead")
+  .action(voiceCallCommand);
 
 program
   .command("draft <file>")
