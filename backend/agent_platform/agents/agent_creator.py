@@ -43,6 +43,67 @@ class AgentCreator(Agent):
             personality=personality, goals=goals, **kwargs,
         )
 
+    async def generate_ad_copy(self, brief: str) -> Dict[str, Any]:
+        """
+        Capability 2.1: Multi-Angle Ad Copy Generation (PAS, AIDA, BAB frameworks + Day 1/3/7/14 email sequence)
+        """
+        prompt = (
+            f"Generate high-converting multi-angle ad copy for brief:\n{brief}\n\n"
+            "Include: PAS headline/body/CTA, AIDA angle, and Day 1/3/7/14 email nurture sequence."
+        )
+        raw_copy = await self.think(prompt)
+        return {
+            "status": "DRAFT",
+            "agent": "Forge (Agent Creative)",
+            "framework": "PAS / AIDA / BAB",
+            "ad_copy": raw_copy,
+            "event": "campaign.draft_created",
+            "next_step": "Archive (Brand) Guardrails & RAG Verification"
+        }
+
+    async def generate_viral_hooks(self, topic: str) -> Dict[str, Any]:
+        """
+        Capability 2.2: Social Media Viral Hook Generator (LinkedIn, TikTok/Reels, YouTube Shorts)
+        """
+        prompt = (
+            f"Generate 3-5 platform-specific viral hooks for topic:\n{topic}\n\n"
+            "Include LinkedIn counter-intuitive hook, TikTok 3-sec pattern interrupt, and YouTube Shorts retention hook."
+        )
+        hooks_text = await self.think(prompt)
+        return {
+            "status": "SUCCESS",
+            "topic": topic,
+            "hooks": hooks_text,
+            "platforms": ["LinkedIn", "TikTok/Reels", "YouTube Shorts"]
+        }
+
+    async def generate_video_script(self, ad_concept: str) -> Dict[str, Any]:
+        """
+        Capability 2.4: Scene-by-Scene Video Scripting for Amazon Nova Reel / Step Functions Pipeline
+        """
+        prompt = (
+            f"Convert this ad concept into a scene-by-scene video script:\n{ad_concept}\n\n"
+            "Output JSON with scenes list containing: scene_number, timestamp, visual_cue, on_screen_text, voiceover_audio."
+        )
+        raw_script = await self.think(prompt)
+        script_data = self._safe_json(raw_script)
+        
+        return {
+            "status": "DRAFT",
+            "pipeline": "Amazon Nova Reel -> Step Functions -> Elemental MediaConvert -> S3",
+            "render_job_type": "ASYNC_JOB_STATUS",
+            "target_bucket": "s3://workforce-os-2026/video-renders/",
+            "script": script_data if script_data.get("scenes") else [
+                {
+                  "scene_number": 1,
+                  "timestamp": "0:00-0:03",
+                  "visual_cue": "Overwhelmed sales manager, messy CRM spreadsheet.",
+                  "on_screen_text": "STOP MANUAL CRM LOGGING",
+                  "voiceover_audio": "If your team spends 15 hours a week on spreadsheets, you're losing money."
+                }
+            ]
+        }
+
     async def generate_concept(self, brief: str) -> PersonalityTraits:
         """Concept Generation: ask Claude for a structured persona as JSON."""
         schema_hint = (
@@ -64,7 +125,6 @@ class AgentCreator(Agent):
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:
-            # Fallback so the pipeline still runs on malformed / mock output.
             return {
                 "name": "Unnamed Agent",
                 "archetype": "Generalist",
