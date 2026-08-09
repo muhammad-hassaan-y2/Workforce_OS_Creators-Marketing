@@ -131,23 +131,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("🚀 Starting Adeele Web UI Next.js server...");
                 let npm_cmd = if cfg!(windows) { "npm.cmd" } else { "npm" };
                 
-                let spawn_result = std::process::Command::new(npm_cmd)
+                let mut spawn_result = std::process::Command::new(npm_cmd)
                     .arg("run")
                     .arg("dev")
                     .current_dir("../frontend")
                     .spawn();
                     
-                if spawn_result.is_ok() {
+                if let Ok(mut child) = spawn_result {
                     println!("✅ Server spawned! Waiting a moment for it to boot...");
                     std::thread::sleep(std::time::Duration::from_secs(4));
+                    
+                    println!("Launching browser at {}...", url);
+                    if open::that(url).is_err() {
+                        println!("Error: Failed to open default browser. Please manually navigate to {}", url);
+                    }
+                    
+                    println!("\nPress Ctrl+C to stop the Web UI server...");
+                    let _ = child.wait();
                 } else {
                     println!("⚠️ Could not automatically start the server. You may need to run `npm run dev` manually.");
                 }
-            }
-
-            println!("Launching browser at {}...", url);
-            if open::that(url).is_err() {
-                println!("Error: Failed to open default browser. Please manually navigate to {}", url);
             }
         },
         None => {
