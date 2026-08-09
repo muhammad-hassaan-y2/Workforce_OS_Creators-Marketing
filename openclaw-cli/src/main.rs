@@ -121,7 +121,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
         Some(Commands::Web) => {
             let url = "http://localhost:3000";
-            println!("Launching Adeele Web UI at {}...", url);
+            
+            // Spawn the Next.js development server in the background
+            println!("🚀 Starting Adeele Web UI Next.js server...");
+            let npm_cmd = if cfg!(windows) { "npm.cmd" } else { "npm" };
+            
+            let spawn_result = std::process::Command::new(npm_cmd)
+                .arg("run")
+                .arg("dev")
+                .current_dir("../frontend")
+                .spawn();
+                
+            if spawn_result.is_ok() {
+                println!("✅ Server spawned! Waiting a moment for it to boot...");
+                std::thread::sleep(std::time::Duration::from_secs(3));
+            } else {
+                println!("⚠️ Could not automatically start the server (is Node.js installed?). You may need to run `npm run dev` in the frontend folder manually.");
+            }
+
+            println!("Launching browser at {}...", url);
             if open::that(url).is_err() {
                 println!("Error: Failed to open default browser. Please manually navigate to {}", url);
             }
