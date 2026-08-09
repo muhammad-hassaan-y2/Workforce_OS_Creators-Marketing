@@ -82,7 +82,7 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
     };
 
     let tabs = Tabs::new(titles)
-        .block(Block::default().borders(Borders::ALL).title("OpenClaw OS"))
+        .block(Block::default().borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)).title(Span::styled(" OpenClaw OS ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD))))
         .select(tab_index)
         .style(Style::default().fg(Color::Cyan))
         .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
@@ -112,8 +112,8 @@ fn draw_memory_replay(f: &mut Frame, state: &mut AppState, area: ratatui::layout
     }).collect();
 
     let agents_list = List::new(agents)
-        .block(Block::default().title("Agents").borders(Borders::ALL))
-        .highlight_style(Style::default().bg(Color::Blue).fg(Color::White))
+        .block(Block::default().title(Span::styled(" Agents ", Style::default().fg(Color::Cyan))).borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)))
+        .highlight_style(Style::default().bg(Color::Blue).fg(Color::White).add_modifier(Modifier::BOLD))
         .highlight_symbol(">> ");
 
     f.render_stateful_widget(agents_list, chunks[0], &mut state.agent_list_state);
@@ -135,7 +135,7 @@ fn draw_memory_replay(f: &mut Frame, state: &mut AppState, area: ratatui::layout
     };
 
     let p = Paragraph::new(memory_content)
-        .block(Block::default().title("Memory Replay").borders(Borders::ALL));
+        .block(Block::default().title(Span::styled(" Memory Replay ", Style::default().fg(Color::Yellow))).borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)));
     f.render_widget(p, chunks[1]);
 }
 
@@ -163,7 +163,7 @@ fn draw_status_dashboard(f: &mut Frame, state: &AppState, area: ratatui::layout:
 
     let table = Table::new(rows, widths)
         .header(header)
-        .block(Block::default().title("Live Agent Status").borders(Borders::ALL));
+        .block(Block::default().title(Span::styled(" Live Agent Status ", Style::default().fg(Color::Green))).borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)));
 
     f.render_widget(table, area);
 }
@@ -232,7 +232,7 @@ fn draw_relationship_graph(f: &mut Frame, state: &AppState, area: ratatui::layou
 
     let p = Paragraph::new(buf)
         .style(Style::default().fg(Color::LightCyan))
-        .block(Block::default().title("Funnel Architecture (Dynamic)").borders(Borders::ALL));
+        .block(Block::default().title(Span::styled(" Funnel Architecture (Dynamic) ", Style::default().fg(Color::Magenta))).borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)));
 
     f.render_widget(p, area);
 }
@@ -247,7 +247,7 @@ fn draw_web_ui_tab(f: &mut Frame, area: ratatui::layout::Rect) {
     let p = Paragraph::new(text)
         .style(Style::default().fg(Color::Cyan))
         .alignment(ratatui::layout::Alignment::Center)
-        .block(Block::default().title("Web UI Integration").borders(Borders::ALL));
+        .block(Block::default().title(Span::styled(" Web UI Integration ", Style::default().fg(Color::LightBlue))).borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)));
 
     f.render_widget(p, area);
 }

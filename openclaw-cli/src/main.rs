@@ -8,8 +8,12 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     Terminal,
 };
-use std::{error::Error, io};
+use std::error::Error;
+use std::io;
 use std::time::Duration;
+use tokio::time::sleep;
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 mod parser;
 mod db;
