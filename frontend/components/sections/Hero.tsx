@@ -121,7 +121,7 @@ export default function Hero() {
                 <Button 
                   variant="primary" 
                   size="lg" 
-                  className="px-8 py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-xl shadow-purple-950/60 border border-purple-400/40"
+                  className="px-8 py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-xl shadow-purple-950/60 border border-purple-400/40 cursor-pointer"
                   icon={<ArrowRight className="w-5 h-5" />}
                 >
                   Launch Agent OS Dashboard

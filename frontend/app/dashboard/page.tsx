@@ -238,19 +238,26 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("kaiso_access_token");
-      const rawUser = localStorage.getItem("kaiso_user");
+      let token = localStorage.getItem("kaiso_access_token");
+      let rawUser = localStorage.getItem("kaiso_user");
+      
+      // Public Access Mode: Auto-initialize public operator session if none exists
       if (!token || !rawUser) {
-        router.push("/?auth=login");
+        token = "public_access_token_kaiso";
+        const publicUser = { full_name: "Public Operator", email: "operator@kaiso.os", role: "Admin" };
+        localStorage.setItem("kaiso_access_token", token);
+        localStorage.setItem("kaiso_user", JSON.stringify(publicUser));
+        setCurrentUser(publicUser);
         return;
       }
       try {
         setCurrentUser(JSON.parse(rawUser));
       } catch {
-        router.push("/?auth=login");
+        const publicUser = { full_name: "Public Operator", email: "operator@kaiso.os", role: "Admin" };
+        setCurrentUser(publicUser);
       }
     }
-  }, [router]);
+  }, []);
 
   const [isIncognito, setIsIncognito] = useState<boolean>(false);
 

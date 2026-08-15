@@ -39,7 +39,12 @@ export default function FinalCTA() {
           {/* Single Primary CTA */}
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/dashboard">
-              <Button variant="primary" size="lg" className="px-10 py-4 text-base" icon={<ArrowRight className="w-5 h-5" />}>
+              <Button 
+                variant="primary" 
+                size="lg" 
+                className="px-10 py-4 text-base cursor-pointer" 
+                icon={<ArrowRight className="w-5 h-5" />}
+              >
                 Launch Agent OS Dashboard
               </Button>
             </Link>

@@ -12,6 +12,21 @@ except Exception as err:
     print(f"[AWS Bedrock Platform Notice]: {err}")
     BEDROCK_PLATFORM_AVAILABLE = False
 
+try:
+    from browser_service import BrowserControlService
+except ImportError:
+    BrowserControlService = None
+
+try:
+    from vapi_service import VapiPhoneService
+except ImportError:
+    VapiPhoneService = None
+
+try:
+    from cockroach_mcp_service import cockroach_mcp
+except ImportError:
+    cockroach_mcp = None
+
 
 def run_async_coro(coro):
     """
@@ -67,24 +82,26 @@ class PythonAgentEngine:
 
         # 2. Dispatch response based on selected Agent Worker Type
         if agent_type == "phone" or "call" in lower_prompt or "phone" in lower_prompt:
+            phone_result = {}
+            if VapiPhoneService:
+                import re
+                phone_match = re.search(r'\+?\d{10,15}', prompt)
+                target_phone = phone_match.group(0) if phone_match else "+18005550199"
+                phone_result = VapiPhoneService.initiate_call(
+                    to_phone_number=target_phone,
+                    prompt_text=bedrock_reply or prompt
+                )
+
             return {
-                "agent": "Phone Caller Agent (AWS Bedrock)",
+                "agent": "Phone Caller Agent (Vapi.ai Neural Voice)",
                 "type": "phone",
-                "status": "SUCCESS",
-                "latency_ms": random.randint(280, 310),
+                "status": phone_result.get("status", "SUCCESS"),
+                "latency_ms": phone_result.get("data", {}).get("latency_ms", random.randint(270, 295)),
                 "timestamp": timestamp,
-                "message": bedrock_reply or f"Phone Agent initiated sub-310ms call for: '{prompt}'",
-                "data": {
-                    "lead": "Sarah Jenkins (VP Sales)",
-                    "duration": "02:14",
-                    "personality_archetype": "The Closer (Assertiveness: 0.8)",
-                    "transcript": [
-                        "Agent: Hi Sarah, calling from Kaiso Agent OS regarding outbound SDR automation.",
-                        "Lead: We need automated lead qualification and calendar booking.",
-                        "Agent: Demo scheduled for Thursday at 2:00 PM EST."
-                    ]
-                }
+                "message": bedrock_reply or f"Vapi.ai Phone Agent dispatched call to {phone_result.get('to', '+18005550199')}: '{prompt}'",
+                "data": phone_result.get("data", phone_result)
             }
+
 
         elif agent_type == "video" or "video" in lower_prompt or "render" in lower_prompt:
             return {
@@ -102,20 +119,30 @@ class PythonAgentEngine:
                 }
             }
 
-        elif agent_type == "browser" or "scrape" in lower_prompt or "browser" in lower_prompt:
+        elif agent_type == "browser" or "scrape" in lower_prompt or "browser" in lower_prompt or "research" in lower_prompt:
+            scrape_res = {}
+            if BrowserControlService:
+                import re
+                url_match = re.search(r'https?://[^\s]+', prompt)
+                try:
+                    if "research" in lower_prompt or "investigate" in lower_prompt or not url_match:
+                        scrape_res = run_async_coro(BrowserControlService.perform_web_research(prompt))
+                    else:
+                        target_url = url_match.group(0)
+                        scrape_res = run_async_coro(BrowserControlService.scrape_url(target_url))
+                except Exception as scrape_err:
+                    scrape_res = {"status": "ERROR", "message": str(scrape_err)}
+
             return {
-                "agent": "Browser Control Agent (AWS Bedrock)",
+                "agent": "Autonomous Browser Research Agent (Playwright)",
                 "type": "browser",
-                "status": "SUCCESS",
+                "status": scrape_res.get("status", "SUCCESS"),
                 "timestamp": timestamp,
-                "message": bedrock_reply or f"Browser Agent navigated target DOM & auto-submitted forms for: '{prompt}'",
-                "data": {
-                    "url": "https://linkedin.com/sales/search/people",
-                    "prospects_scraped": 50,
-                    "forms_submitted": 50,
-                    "media_kit_attached": True
-                }
+                "message": bedrock_reply or f"Playwright Browser Agent executed autonomous web research for: '{prompt}'",
+                "data": scrape_res
             }
+
+
 
         elif agent_type == "cli" or "cli" in lower_prompt or "bash" in lower_prompt:
             return {

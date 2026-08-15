@@ -1,3 +1,5 @@
+import sys
+import os
 import time
 import uuid
 from datetime import datetime
@@ -6,6 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
+
+# Ensure current directory is in sys.path for Vercel Python serverless runtime
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from database import engine, Base, get_db
 import models
 import schemas
@@ -13,9 +19,13 @@ import auth
 from agent_engine import PythonAgentEngine
 
 # Create database tables automatically
-models.Base.metadata.create_all(bind=engine)
+try:
+    models.Base.metadata.create_all(bind=engine)
+except Exception as db_init_err:
+    print(f"[Database Init Warning]: {db_init_err}")
 
 app = FastAPI(
+
     title="Kaiso Agent OS API",
     description="Real-time FastAPI Backend with Neon PostgreSQL, Dynamic Agent Persona Engine & AWS Bedrock Models SDK",
     version="3.0.0"

@@ -9,8 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kaiso — AI Agent Operating System for Sales, Marketing & Content Creators",
-  description: "Deploy autonomous AI agents that place calls, operate browsers, render 4K video shorts, and run backend CLI workflows — synchronized as one multi-agent workforce.",
+  title: "Kaiso OS — Autonomous AI Agent Operating System for Sales & Marketing",
+  description: "Deploy autonomous AI agents that place calls, operate browsers, render video shorts, and run backend CLI workflows — synchronized as one multi-agent workforce.",
+
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

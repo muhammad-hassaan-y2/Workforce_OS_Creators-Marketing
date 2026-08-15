@@ -204,7 +204,9 @@ class Agent:
         if not gemini_key:
             return "", "No GEMINI_API_KEY set in backend/.env"
 
-        models = ["models/gemini-flash-latest", "models/gemini-2.5-flash", "models/gemini-pro-latest"]
+        models = ["models/gemini-1.5-flash", "models/gemini-2.0-flash-exp", "models/gemini-1.5-pro", "models/gemini-flash"]
+
+
         for m in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/{m}:generateContent?key={gemini_key}"
             payload = {

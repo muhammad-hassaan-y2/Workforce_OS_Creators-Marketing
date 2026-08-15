@@ -16,6 +16,12 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Strip channel_binding query parameter if present for maximum psycopg2 compatibility
+if "channel_binding=" in DATABASE_URL:
+    import re
+    DATABASE_URL = re.sub(r'[&?]channel_binding=[^&]+', '', DATABASE_URL)
+
+
 # Configure SQLAlchemy engine arguments
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 
