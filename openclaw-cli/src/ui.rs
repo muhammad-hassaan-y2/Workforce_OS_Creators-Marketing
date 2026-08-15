@@ -1,4 +1,4 @@
-use crate::db::{Agent, Memory};
+use crate::mcp_client::{Agent, Memory};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},

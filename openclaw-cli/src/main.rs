@@ -16,7 +16,7 @@ use tokio::time::sleep;
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 mod parser;
-mod db;
+mod mcp_client;
 mod ui;
 
 /// OpenClaw CLI - The unified command line interface for Workforce OS
@@ -69,11 +69,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match &cli.command {
         Some(Commands::Agent { agent_command }) => {
-            let db_client = db::DbClient::new().await?;
+            let mcp_client = mcp_client::McpClient::new()?;
             match agent_command {
                 AgentCommands::List => {
-                    println!("Fetching agents...");
-                    match db_client.list_agents().await {
+                    println!("Fetching agents via MCP Server...");
+                    match mcp_client.list_agents().await {
                         Ok(agents) => {
                             for agent in agents { println!("- {} ({})", agent.name, agent.id); }
                         }
@@ -81,8 +81,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
                 AgentCommands::Inspect { id } => {
-                    if let Ok(uuid) = uuid::Uuid::parse_str(id) {
-                        match db_client.inspect_agent(uuid).await {
+                    if let Ok(_uuid) = uuid::Uuid::parse_str(id) {
+                        match mcp_client.inspect_agent(id).await {
                             Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
                             Err(e) => println!("Error: {}", e),
                         }
@@ -98,8 +98,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             match p.parse(&query_str) {
                 parser::Intent::ListAgents => {
                     println!("=> Intent mapped to 'Agent List'. Executing...");
-                    let db_client = db::DbClient::new().await?;
-                    match db_client.list_agents().await {
+                    let mcp_client = mcp_client::McpClient::new()?;
+                    match mcp_client.list_agents().await {
                         Ok(agents) => {
                             for agent in agents { println!("- {} ({})", agent.name, agent.id); }
                         }
@@ -108,9 +108,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
                 parser::Intent::InspectAgent(id) => {
                     println!("=> Intent mapped to 'Agent Inspect' for ID: {}. Executing...", id);
-                    let db_client = db::DbClient::new().await?;
-                    if let Ok(uuid) = uuid::Uuid::parse_str(&id) {
-                        match db_client.inspect_agent(uuid).await {
+                    let mcp_client = mcp_client::McpClient::new()?;
+                    if let Ok(_uuid) = uuid::Uuid::parse_str(&id) {
+                        match mcp_client.inspect_agent(&id).await {
                             Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
                             Err(e) => println!("Error: {}", e),
                         }
@@ -159,15 +159,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
         None => {
             // Start the main TUI dashboard if no subcommands provided
-            let db_client = db::DbClient::new().await?;
-            run_tui(db_client).await?;
+            let mcp_client = mcp_client::McpClient::new()?;
+            run_tui(mcp_client).await?;
         }
     }
 
     Ok(())
 }
 
-async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
+async fn run_tui(mcp_client: mcp_client::McpClient) -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -177,7 +177,7 @@ async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
     let mut state = ui::AppState::new();
 
     // Initial load of agents
-    if let Ok(agents) = db_client.list_agents().await {
+    if let Ok(agents) = mcp_client.list_agents().await {
         state.agents = agents;
         state.agent_list_state.select(if state.agents.is_empty() { None } else { Some(0) });
     }
@@ -185,7 +185,7 @@ async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
     
     // load memories for the initially selected agent
     if let Some(agent) = state.selected_agent() {
-        if let Ok(mems) = db_client.get_memories_for_agent(agent.id).await {
+        if let Ok(mems) = mcp_client.get_memories_for_agent(agent.id).await {
             state.selected_memories = mems;
         }
     }
@@ -224,7 +224,7 @@ async fn run_tui(db_client: db::DbClient) -> Result<(), Box<dyn Error>> {
                 state.loading = true;
                 terminal.draw(|f| ui::draw_ui(f, &mut state))?;
                 
-                if let Ok(mems) = db_client.get_memories_for_agent(id).await {
+                if let Ok(mems) = mcp_client.get_memories_for_agent(id).await {
                     state.selected_memories = mems;
                 }
                 state.loading = false;
