@@ -1,6 +1,23 @@
 use reqwest::Client;
 use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
 use std::env;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Agent {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub role: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Memory {
+    pub id: uuid::Uuid,
+    pub agent_id: uuid::Uuid,
+    pub fact: String,
+    pub fact_type: String,
+}
 
 pub struct McpClient {
     client: Client,
@@ -64,39 +81,45 @@ impl McpClient {
         }
 
         if let Some(content) = json_resp["result"]["content"][0]["text"].as_str() {
-            // Attempt to parse the text as JSON, if it's an array of objects
             if let Ok(parsed_json) = serde_json::from_str::<Value>(content) {
                 return Ok(parsed_json);
             }
-            // Otherwise just return the string wrapped in JSON
             return Ok(json!({ "output": content }));
         }
 
         Err("No text content returned from tool".into())
     }
 
-    pub async fn list_agents(&self) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn list_agents(&self) -> Result<Vec<Agent>, Box<dyn std::error::Error>> {
         let args = json!({
             "database": self.database,
             "query": "SELECT * FROM agents LIMIT 100"
         });
 
         let val = self.call_tool("select_query", args).await?;
-        if let Some(arr) = val.as_array() {
-            Ok(arr.clone())
-        } else {
-            // fallback if it just returned a string output
-            Ok(vec![val])
-        }
+        let agents: Vec<Agent> = serde_json::from_value(val)?;
+        Ok(agents)
     }
 
-    pub async fn inspect_agent(&self, id: &str) -> Result<Value, Box<dyn std::error::Error>> {
+    pub async fn inspect_agent(&self, id: &str) -> Result<Agent, Box<dyn std::error::Error>> {
         let args = json!({
             "database": self.database,
             "query": format!("SELECT * FROM agents WHERE id = '{}' LIMIT 1", id)
         });
 
         let val = self.call_tool("select_query", args).await?;
-        Ok(val)
+        let agents: Vec<Agent> = serde_json::from_value(val)?;
+        agents.into_iter().next().ok_or_else(|| "Agent not found".into())
+    }
+    
+    pub async fn get_memories_for_agent(&self, agent_id: uuid::Uuid) -> Result<Vec<Memory>, Box<dyn std::error::Error>> {
+        let args = json!({
+            "database": self.database,
+            "query": format!("SELECT * FROM long_term_memory WHERE agent_id = '{}' ORDER BY created_at DESC LIMIT 50", agent_id)
+        });
+
+        let val = self.call_tool("select_query", args).await?;
+        let memories: Vec<Memory> = serde_json::from_value(val)?;
+        Ok(memories)
     }
 }

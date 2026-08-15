@@ -4,12 +4,24 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.5", features = ["derive"] }
 crossterm = "0.29.0"
 dotenvy = "0.15.7"
+open = "5.4.1"
 ratatui = "0.30.2"
 reqwest = { version = "0.13.4", features = ["json"] }
 reqwest-eventsource = "0.6.0"
 serde = "1.0.229"
 serde_json = "1.0.151"
+sqlx = { version = "0.9.0", features = ["postgres", "tls-rustls", "macros", "runtime-tokio", "uuid", "chrono"] }
 tokio = { version = "1.53.1", features = ["full"] }
+uuid = { version = "1.24.0", features = ["serde", "v4"] }
+mimalloc = "0.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

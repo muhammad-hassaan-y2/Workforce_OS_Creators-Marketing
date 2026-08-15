@@ -7,7 +7,7 @@ import { Button } from "../ui/Button";
 
 export default function CLISection() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"npm" | "npx" | "deploy">("npm");
+  const [activeTab, setActiveTab] = useState<"npm" | "npx" | "deploy" | "openclaw">("npm");
 
   const commands = [
     {
@@ -27,6 +27,12 @@ export default function CLISection() {
       label: "Deploy Workforce",
       code: "kaiso workforce deploy --agents caller,browser,video,cli --env production",
       description: "Deploy active multi-agent mesh to sovereign cloud nodes or local runtime."
+    },
+    {
+      id: "openclaw",
+      label: "OpenClaw Monitor",
+      code: "cargo install --git https://github.com/muhammad-hassaan-y2/Workforce_OS_Creators-Marketing openclaw-cli",
+      description: "Install the blazing-fast Rust TUI to visually monitor agent memory and orchestrate the OS locally."
     }
   ];
 
@@ -125,7 +131,9 @@ export default function CLISection() {
               <Sparkles className="w-4 h-4 text-yellow-400 shrink-0" />
               <span>{currentCmd.description}</span>
             </div>
-            <span className="text-purple-400 shrink-0 font-bold">Node.js 18+</span>
+            <span className="text-purple-400 shrink-0 font-bold">
+              {currentCmd.id === "openclaw" ? "Rust/Cargo" : "Node.js 18+"}
+            </span>
           </div>
 
           {/* Features Grid */}
