@@ -242,7 +242,7 @@ fn draw_web_ui_tab(f: &mut Frame, area: ratatui::layout::Rect) {
                 The OpenClaw CLI is seamlessly integrated with the Adeele Web Dashboard.\n\n\
                 To launch the dashboard, press 'q' to exit the TUI, and run:\n\n\
                 > openclaw-cli web\n\n\
-                This will automatically open your default browser to http://localhost:3000.";
+                This will automatically open your default browser to https://kaiso-os.vercel.app/.";
 
     let p = Paragraph::new(text)
         .style(Style::default().fg(Color::Cyan))

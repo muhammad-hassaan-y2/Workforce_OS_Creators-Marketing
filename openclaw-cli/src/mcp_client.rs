@@ -2,6 +2,8 @@ use reqwest::Client;
 use serde_json::{json, Value};
 use serde::{Deserialize, Serialize};
 use std::env;
+use keyring::Entry;
+use dialoguer::{theme::ColorfulTheme, Password, Input};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Agent {
@@ -28,20 +30,54 @@ pub struct McpClient {
 }
 
 impl McpClient {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Self {
         let endpoint = env::var("MCP_ENDPOINT")
             .unwrap_or_else(|_| "https://cockroachlabs.cloud/mcp".to_string());
-        let api_key = env::var("MCP_API_KEY").expect("MCP_API_KEY must be set in .env");
-        let cluster_id = env::var("MCP_CLUSTER_ID").expect("MCP_CLUSTER_ID must be set in .env");
+            
+        let entry_key = Entry::new("openclaw_mcp", "api_key").unwrap();
+        let entry_cluster = Entry::new("openclaw_mcp", "cluster_id").unwrap();
+
+        let api_key = match env::var("MCP_API_KEY") {
+            Ok(key) => key,
+            Err(_) => match entry_key.get_password() {
+                Ok(key) => key,
+                Err(_) => {
+                    println!("\n🚀 Welcome to OpenClaw V2 Setup!");
+                    let key = Password::with_theme(&ColorfulTheme::default())
+                        .with_prompt("Enter your CockroachDB MCP API Key (it will be securely stored in your OS keyring)")
+                        .interact()
+                        .unwrap();
+                    let _ = entry_key.set_password(&key);
+                    key
+                }
+            }
+        };
+
+        let cluster_id = match env::var("MCP_CLUSTER_ID") {
+            Ok(id) => id,
+            Err(_) => match entry_cluster.get_password() {
+                Ok(id) => id,
+                Err(_) => {
+                    let id: String = Input::with_theme(&ColorfulTheme::default())
+                        .with_prompt("Enter your CockroachDB Cluster ID")
+                        .interact_text()
+                        .unwrap();
+                    let _ = entry_cluster.set_password(&id);
+                    println!("✅ Credentials securely saved! Booting up...\n");
+                    id
+                }
+            }
+        };
+
         let database = env::var("MCP_DATABASE").unwrap_or_else(|_| "defaultdb".to_string());
 
-        Ok(Self {
+        Self {
             client: Client::new(),
             endpoint,
             api_key,
             cluster_id,
             database,
-        })
+        }
     }
 
     fn parse_sse_response(text: &str) -> Result<Value, Box<dyn std::error::Error>> {

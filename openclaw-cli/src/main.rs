@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match &cli.command {
         Some(Commands::Agent { agent_command }) => {
-            let mcp_client = mcp_client::McpClient::new()?;
+            let mcp_client = mcp_client::McpClient::new();
             match agent_command {
                 AgentCommands::List => {
                     println!("Fetching agents via MCP Server...");
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             match p.parse(&query_str) {
                 parser::Intent::ListAgents => {
                     println!("=> Intent mapped to 'Agent List'. Executing...");
-                    let mcp_client = mcp_client::McpClient::new()?;
+                    let mcp_client = mcp_client::McpClient::new();
                     match mcp_client.list_agents().await {
                         Ok(agents) => {
                             for agent in agents { println!("- {} ({})", agent.name, agent.id); }
@@ -108,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
                 parser::Intent::InspectAgent(id) => {
                     println!("=> Intent mapped to 'Agent Inspect' for ID: {}. Executing...", id);
-                    let mcp_client = mcp_client::McpClient::new()?;
+                    let mcp_client = mcp_client::McpClient::new();
                     if let Ok(_uuid) = uuid::Uuid::parse_str(&id) {
                         match mcp_client.inspect_agent(&id).await {
                             Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
@@ -124,42 +124,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         },
         Some(Commands::Web) => {
-            let url = "http://localhost:3000";
-            
-            // Check if node_modules exists, if not, warn the user
-            if !std::path::Path::new("../frontend/node_modules").exists() {
-                println!("⚠️  Dependencies not found! The Next.js server cannot start.");
-                println!("Please run `npm install` inside the `frontend` directory first.");
-            } else {
-                // Spawn the Next.js development server in the background
-                println!("🚀 Starting Adeele Web UI Next.js server...");
-                let npm_cmd = if cfg!(windows) { "npm.cmd" } else { "npm" };
-                
-                let mut spawn_result = std::process::Command::new(npm_cmd)
-                    .arg("run")
-                    .arg("dev")
-                    .current_dir("../frontend")
-                    .spawn();
-                    
-                if let Ok(mut child) = spawn_result {
-                    println!("✅ Server spawned! Waiting a moment for it to boot...");
-                    std::thread::sleep(std::time::Duration::from_secs(4));
-                    
-                    println!("Launching browser at {}...", url);
-                    if open::that(url).is_err() {
-                        println!("Error: Failed to open default browser. Please manually navigate to {}", url);
-                    }
-                    
-                    println!("\nPress Ctrl+C to stop the Web UI server...");
-                    let _ = child.wait();
-                } else {
-                    println!("⚠️ Could not automatically start the server. You may need to run `npm run dev` manually.");
-                }
+            let url = "https://kaiso-os.vercel.app/";
+            println!("🚀 Launching Adeele Web UI at {}...", url);
+            if open::that(url).is_err() {
+                println!("Error: Failed to open default browser. Please manually navigate to {}", url);
             }
         },
         None => {
             // Start the main TUI dashboard if no subcommands provided
-            let mcp_client = mcp_client::McpClient::new()?;
+            let mcp_client = mcp_client::McpClient::new();
             run_tui(mcp_client).await?;
         }
     }
@@ -191,6 +164,7 @@ async fn run_tui(mcp_client: mcp_client::McpClient) -> Result<(), Box<dyn Error>
     }
 
     let mut last_selected_id = state.selected_agent().map(|a| a.id);
+    let mut last_poll = std::time::Instant::now();
 
     loop {
         terminal.draw(|f| ui::draw_ui(f, &mut state))?;
@@ -230,6 +204,19 @@ async fn run_tui(mcp_client: mcp_client::McpClient) -> Result<(), Box<dyn Error>
                 state.loading = false;
             }
             last_selected_id = current_selected_id;
+        }
+
+        // Live Background Polling (Every 5 seconds)
+        if last_poll.elapsed() >= Duration::from_secs(5) {
+            if let Ok(agents) = mcp_client.list_agents().await {
+                state.agents = agents;
+            }
+            if let Some(agent) = state.selected_agent() {
+                if let Ok(mems) = mcp_client.get_memories_for_agent(agent.id).await {
+                    state.selected_memories = mems;
+                }
+            }
+            last_poll = std::time::Instant::now();
         }
     }
 
