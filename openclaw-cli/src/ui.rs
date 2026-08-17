@@ -69,7 +69,7 @@ pub fn draw_ui(f: &mut Frame, state: &mut AppState) {
         .split(f.area());
 
     // Tabs Menu
-    let titles: Vec<Line> = vec!["[1] Memory Replay", "[2] Status Dashboard", "[3] Relationship Graph", "[4] Adeele Web UI"]
+    let titles: Vec<Line> = vec!["[1] Memory Replay", "[2] Status Dashboard", "[3] Relationship Graph", "[4] WorkForce OS Web"]
         .into_iter()
         .map(|t| Line::from(t))
         .collect();
@@ -202,8 +202,8 @@ fn draw_relationship_graph(f: &mut Frame, state: &AppState, area: ratatui::layou
 }
 
 fn draw_web_ui_tab(f: &mut Frame, area: ratatui::layout::Rect) {
-    let text = "\n\n🚀 Adeele Web UI\n\n\n\
-                The OpenClaw CLI is seamlessly integrated with the Adeele Web Dashboard.\n\n\
+    let text = "\n\n🚀 WorkForce OS Web Dashboard\n\n\n\
+                The OpenClaw CLI is seamlessly integrated with the WorkForce OS Web Dashboard.\n\n\
                 To launch the dashboard, press 'q' to exit the TUI, and run:\n\n\
                 > openclaw-cli web\n\n\
                 This will automatically open your default browser to https://kaiso-os.vercel.app/.";

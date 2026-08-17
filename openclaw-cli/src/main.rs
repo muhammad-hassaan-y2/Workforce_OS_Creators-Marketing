@@ -46,7 +46,7 @@ enum Commands {
         /// The natural language query string (can be unquoted)
         text: Vec<String>,
     },
-    /// Open the Adeele Web UI in your default browser
+    /// Open the WorkForce OS Web Dashboard in your default browser
     Web,
 }
 
@@ -125,7 +125,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
         Some(Commands::Web) => {
             let url = std::env::var("WEB_UI_URL").unwrap_or_else(|_| "https://kaiso-os.vercel.app/".to_string());
-            println!("🚀 Launching Adeele Web UI at {}...", url);
+            println!("🚀 Launching WorkForce OS Web Dashboard at {}...", url);
             if open::that(&url).is_err() {
                 println!("Error: Failed to open default browser. Please manually navigate to {}", url);
             }
@@ -208,11 +208,25 @@ async fn run_tui(mcp_client: mcp_client::McpClient) -> Result<(), Box<dyn Error>
 
         // Live Background Polling (Every 5 seconds)
         if last_poll.elapsed() >= Duration::from_secs(5) {
+            let mut preserved_id = None;
+            if let Some(agent) = state.selected_agent() {
+                preserved_id = Some(agent.id.clone());
+            }
+
             if let Ok(agents) = mcp_client.list_agents().await {
                 state.agents = agents;
+
+                // Safely restore the cursor to the exact same agent UUID
+                if let Some(id) = preserved_id {
+                    if let Some(idx) = state.agents.iter().position(|a| a.id == id) {
+                        state.agent_list_state.select(Some(idx));
+                    } else {
+                        state.agent_list_state.select(if state.agents.is_empty() { None } else { Some(0) });
+                    }
+                }
             }
             if let Some(agent) = state.selected_agent() {
-                if let Ok(mems) = mcp_client.get_memories_for_agent(agent.id).await {
+                if let Ok(mems) = mcp_client.get_memories_for_agent(agent.id.clone()).await {
                     state.selected_memories = mems;
                 }
             }
