@@ -169,70 +169,34 @@ fn draw_status_dashboard(f: &mut Frame, state: &AppState, area: ratatui::layout:
 }
 
 fn draw_relationship_graph(f: &mut Frame, state: &AppState, area: ratatui::layout::Rect) {
-    let mut tofu = vec![];
-    let mut mofu = vec![];
-    let mut bofu = vec![];
-    let mut post_sale = vec![];
-    let mut other = vec![];
+    use std::collections::HashMap;
+    let mut role_groups: HashMap<String, Vec<&Agent>> = HashMap::new();
 
-    // Categorize agents dynamically based on Hassaan's priorities
+    // Group agents dynamically by their role
     for agent in &state.agents {
-        let name = agent.name.to_lowercase();
-        let role = agent.role.to_lowercase();
-        
-        if name.contains("browser") || name.contains("creator") || role.contains("scrap") || role.contains("ad copy") {
-            tofu.push(agent);
-        } else if name.contains("jordan") || name.contains("phone") || role.contains("sales") || role.contains("outreach") {
-            mofu.push(agent);
-        } else if name.contains("objection") || name.contains("archive") || name.contains("brand") || role.contains("closing") {
-            bofu.push(agent);
-        } else if name.contains("atlas") || name.contains("warden") || name.contains("forge") || role.contains("pm") || role.contains("audit") {
-            post_sale.push(agent);
-        } else {
-            other.push(agent);
-        }
+        let role = agent.role.clone();
+        role_groups.entry(role).or_default().push(agent);
     }
 
     let mut buf = String::new();
+    
+    // Sort roles alphabetically for consistent display
+    let mut sorted_roles: Vec<&String> = role_groups.keys().collect();
+    sorted_roles.sort();
 
-    buf.push_str("[ 🌐 TOP OF FUNNEL (TOFU): Lead Gen & Scraping ]\n");
-    for (i, a) in tofu.iter().enumerate() {
-        let prefix = if i == tofu.len() - 1 { " └──" } else { " ├──" };
-        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
-    }
-    buf.push_str("                                  │\n                                  ▼\n");
-
-    buf.push_str("[ 🎯 MIDDLE OF FUNNEL (MOFU): Qualification & Outreach ]\n");
-    for (i, a) in mofu.iter().enumerate() {
-        let prefix = if i == mofu.len() - 1 { " └──" } else { " ├──" };
-        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
-    }
-    buf.push_str("                                  │\n                                  ▼\n");
-
-    buf.push_str("[ 🤝 BOTTOM OF FUNNEL (BOFU): Objection Handling & Closing ]\n");
-    for (i, a) in bofu.iter().enumerate() {
-        let prefix = if i == bofu.len() - 1 { " └──" } else { " ├──" };
-        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
-    }
-    buf.push_str("                                  │\n                                  ▼\n");
-
-    buf.push_str("[ 🚀 POST-SALE ONBOARDING & OPS: Execution & Audit ]\n");
-    for (i, a) in post_sale.iter().enumerate() {
-        let prefix = if i == post_sale.len() - 1 { " └──" } else { " ├──" };
-        buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
-    }
-
-    if !other.is_empty() {
-        buf.push_str("\n[ ❓ UNCATEGORIZED AGENTS ]\n");
-        for (i, a) in other.iter().enumerate() {
-            let prefix = if i == other.len() - 1 { " └──" } else { " ├──" };
-            buf.push_str(&format!("{} {} ({}) ──> Status: {}\n", prefix, a.name, a.role, a.status));
+    for role in sorted_roles {
+        buf.push_str(&format!("[ 📂 ROLE: {} ]\n", role.to_uppercase()));
+        let agents = role_groups.get(role).unwrap();
+        for (i, a) in agents.iter().enumerate() {
+            let prefix = if i == agents.len() - 1 { " └──" } else { " ├──" };
+            buf.push_str(&format!("{} {} ──> Status: {}\n", prefix, a.name, a.status));
         }
+        buf.push_str("\n");
     }
 
     let p = Paragraph::new(buf)
         .style(Style::default().fg(Color::LightCyan))
-        .block(Block::default().title(Span::styled(" Funnel Architecture (Dynamic) ", Style::default().fg(Color::Magenta))).borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)));
+        .block(Block::default().title(Span::styled(" Agent Directory by Role (Dynamic) ", Style::default().fg(Color::Magenta))).borders(Borders::ALL).border_type(ratatui::widgets::BorderType::Rounded).border_style(Style::default().fg(Color::DarkGray)));
 
     f.render_widget(p, area);
 }

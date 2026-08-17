@@ -30,12 +30,12 @@ pub struct McpClient {
 }
 
 impl McpClient {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let endpoint = env::var("MCP_ENDPOINT")
             .unwrap_or_else(|_| "https://cockroachlabs.cloud/mcp".to_string());
             
-        let entry_key = Entry::new("openclaw_mcp", "api_key").unwrap();
-        let entry_cluster = Entry::new("openclaw_mcp", "cluster_id").unwrap();
+        let entry_key = Entry::new("openclaw_mcp", "api_key")?;
+        let entry_cluster = Entry::new("openclaw_mcp", "cluster_id")?;
 
         let api_key = match env::var("MCP_API_KEY") {
             Ok(key) => key,
@@ -45,8 +45,7 @@ impl McpClient {
                     println!("\n🚀 Welcome to OpenClaw V2 Setup!");
                     let key = Password::with_theme(&ColorfulTheme::default())
                         .with_prompt("Enter your CockroachDB MCP API Key (it will be securely stored in your OS keyring)")
-                        .interact()
-                        .unwrap();
+                        .interact()?;
                     let _ = entry_key.set_password(&key);
                     key
                 }
@@ -60,8 +59,7 @@ impl McpClient {
                 Err(_) => {
                     let id: String = Input::with_theme(&ColorfulTheme::default())
                         .with_prompt("Enter your CockroachDB Cluster ID")
-                        .interact_text()
-                        .unwrap();
+                        .interact_text()?;
                     let _ = entry_cluster.set_password(&id);
                     println!("✅ Credentials securely saved! Booting up...\n");
                     id
@@ -71,13 +69,13 @@ impl McpClient {
 
         let database = env::var("MCP_DATABASE").unwrap_or_else(|_| "defaultdb".to_string());
 
-        Self {
+        Ok(Self {
             client: Client::new(),
             endpoint,
             api_key,
             cluster_id,
             database,
-        }
+        })
     }
 
     fn parse_sse_response(text: &str) -> Result<Value, Box<dyn std::error::Error>> {

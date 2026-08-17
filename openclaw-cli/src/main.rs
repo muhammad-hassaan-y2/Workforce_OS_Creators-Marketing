@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match &cli.command {
         Some(Commands::Agent { agent_command }) => {
-            let mcp_client = mcp_client::McpClient::new();
+            let mcp_client = mcp_client::McpClient::new()?;
             match agent_command {
                 AgentCommands::List => {
                     println!("Fetching agents via MCP Server...");
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             match p.parse(&query_str) {
                 parser::Intent::ListAgents => {
                     println!("=> Intent mapped to 'Agent List'. Executing...");
-                    let mcp_client = mcp_client::McpClient::new();
+                    let mcp_client = mcp_client::McpClient::new()?;
                     match mcp_client.list_agents().await {
                         Ok(agents) => {
                             for agent in agents { println!("- {} ({})", agent.name, agent.id); }
@@ -108,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
                 parser::Intent::InspectAgent(id) => {
                     println!("=> Intent mapped to 'Agent Inspect' for ID: {}. Executing...", id);
-                    let mcp_client = mcp_client::McpClient::new();
+                    let mcp_client = mcp_client::McpClient::new()?;
                     if let Ok(_uuid) = uuid::Uuid::parse_str(&id) {
                         match mcp_client.inspect_agent(&id).await {
                             Ok(agent) => println!("{}", serde_json::to_string_pretty(&agent)?),
@@ -124,15 +124,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         },
         Some(Commands::Web) => {
-            let url = "https://kaiso-os.vercel.app/";
+            let url = std::env::var("WEB_UI_URL").unwrap_or_else(|_| "https://kaiso-os.vercel.app/".to_string());
             println!("🚀 Launching Adeele Web UI at {}...", url);
-            if open::that(url).is_err() {
+            if open::that(&url).is_err() {
                 println!("Error: Failed to open default browser. Please manually navigate to {}", url);
             }
         },
         None => {
             // Start the main TUI dashboard if no subcommands provided
-            let mcp_client = mcp_client::McpClient::new();
+            let mcp_client = mcp_client::McpClient::new()?;
             run_tui(mcp_client).await?;
         }
     }
